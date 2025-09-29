@@ -1,15 +1,10 @@
 {
   "buildCommand": "npm install",
   "outputDirectory": ".",
-  "functions": {
-    "api/data.php": {
-      "runtime": "now-php@1.0.0"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/data.php"
+      "destination": "/api/data"
     },
     {
       "source": "/((?!static/|api/).*)",
