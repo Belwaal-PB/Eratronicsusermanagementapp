@@ -1,8 +1,6 @@
 // Simple API endpoint for data management
-import fs from 'fs';
-import path from 'path';
-
-const DATA_FILE = '/tmp/data.json';
+// Global data store that persists during function lifetime
+let globalDataStore = null;
 
 // Hash password function
 function hashPassword(password) {
@@ -15,19 +13,10 @@ function hashPassword(password) {
   return hash.toString();
 }
 
-// Load data from file or create default data
-function loadData() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const data = fs.readFileSync(DATA_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading data:', error);
-  }
-  
-  // Return default data if file doesn't exist or error occurs
-  return {
+// Initialize or get global data store
+function getDataStore() {
+  if (!globalDataStore) {
+    globalDataStore = {
     users: [
       {
         id: 1,
@@ -89,15 +78,8 @@ function loadData() {
     nextImageId: 22,
      nextClickId: 1
    };
-}
-
-// Save data to file
-function saveData(dataStore) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(dataStore, null, 2));
-  } catch (error) {
-    console.error('Error saving data:', error);
   }
+  return globalDataStore;
 }
 
 export default function handler(req, res) {
@@ -111,8 +93,8 @@ export default function handler(req, res) {
     return;
   }
 
-  // Load data from persistent storage
-  let dataStore = loadData();
+  // Get global data store
+  let dataStore = getDataStore();
 
   function verifyPassword(password, hash) {
     return hashPassword(password) === hash;
@@ -225,7 +207,6 @@ export default function handler(req, res) {
           };
 
            dataStore.users.push(newUser);
-           saveData(dataStore);
            res.status(201).json({ success: true, user: newUser });
         } else if (path === '/images') {
           const { name, category, filename, imageData } = body;
@@ -240,7 +221,6 @@ export default function handler(req, res) {
           };
 
            dataStore.images.push(newImage);
-           saveData(dataStore);
            res.status(201).json({ success: true, image: newImage });
         } else if (path === '/clicks') {
           const { user_id, image_id } = body;
@@ -253,7 +233,6 @@ export default function handler(req, res) {
           };
 
            dataStore.clicks.push(newClick);
-           saveData(dataStore);
            res.status(201).json({ success: true, click: newClick });
         } else if (path === '/users/bulk') {
           const { users } = body;
@@ -284,7 +263,6 @@ export default function handler(req, res) {
              }
            });
 
-           saveData(dataStore);
            res.status(200).json({
             success: true, 
             successCount, 
@@ -308,7 +286,6 @@ export default function handler(req, res) {
 
            dataStore.users.splice(userIndex, 1);
            dataStore.clicks = dataStore.clicks.filter(c => c.user_id !== userId);
-           saveData(dataStore);
            res.status(200).json({ success: true });
         } else if (path.startsWith('/images/')) {
           const imageId = parseInt(path.split('/')[2]);
@@ -321,7 +298,6 @@ export default function handler(req, res) {
 
            dataStore.images.splice(imageIndex, 1);
            dataStore.clicks = dataStore.clicks.filter(c => c.image_id !== imageId);
-           saveData(dataStore);
            res.status(200).json({ success: true });
         } else {
           res.status(404).json({ success: false, message: 'Endpoint not found' });
