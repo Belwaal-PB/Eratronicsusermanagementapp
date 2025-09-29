@@ -1,5 +1,5 @@
 {
-  "buildCommand": "",
+  "buildCommand": "npm install",
   "outputDirectory": ".",
   "functions": {
     "api/data.js": {
