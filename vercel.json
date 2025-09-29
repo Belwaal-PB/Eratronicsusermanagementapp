@@ -2,14 +2,14 @@
   "buildCommand": "npm install",
   "outputDirectory": ".",
   "functions": {
-    "api/data.js": {
-      "runtime": "nodejs20.x@1.0.0"
+    "api/data.php": {
+      "runtime": "php@1.0.0"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/data"
+      "destination": "/api/data.php"
     },
     {
       "source": "/((?!static/|api/).*)",
