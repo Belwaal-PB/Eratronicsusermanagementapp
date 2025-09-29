@@ -1,4 +1,4 @@
-# Eratronics User Management System
+# Eratronics Selectit
 
 A modern, responsive user management system with image selection capabilities built with vanilla JavaScript and Bootstrap.
 

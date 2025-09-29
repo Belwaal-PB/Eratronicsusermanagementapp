@@ -1,4 +1,4 @@
-// Eratronics User Management System - JavaScript Implementation
+// Eratronics Selectit - JavaScript Implementation
 class EratronicsApp {
     constructor() {
         this.currentUser = null;
@@ -1231,7 +1231,7 @@ class EratronicsApp {
             }
             const userTypeElement = document.getElementById('currentUserType');
             if (userTypeElement) userTypeElement.textContent = this.currentUser.user_type;
-            if (navbarBrand) navbarBrand.textContent = 'Eratronics User Management';
+            if (navbarBrand) navbarBrand.textContent = 'Eratronics Selectit';
         } else {
             // User is not logged in - show login, hide user info and logout
             console.log('User is not logged in, showing login link');
@@ -1247,7 +1247,7 @@ class EratronicsApp {
                 logoutLink.style.display = 'none';
                 logoutLink.classList.add('hidden');
             }
-            if (navbarBrand) navbarBrand.textContent = 'Eratronics User Management';
+            if (navbarBrand) navbarBrand.textContent = 'Eratronics Selectit';
         }
     }
 }

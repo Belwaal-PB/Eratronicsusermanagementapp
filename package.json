@@ -1,7 +1,7 @@
 {
-  "name": "eratronics-user-management",
+  "name": "eratronics-selectit",
   "version": "1.0.0",
-  "description": "A modern user management system with image selection capabilities",
+  "description": "Eratronics Selectit - A modern user management system with image selection capabilities",
   "main": "index.html",
   "scripts": {
     "dev": "vercel dev",
