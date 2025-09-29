@@ -1,4 +1,6 @@
 // Simple API endpoint for data management
+import { kv } from '@vercel/kv';
+
 // Global data store that persists during function lifetime
 let globalDataStore = null;
 
@@ -13,76 +15,91 @@ function hashPassword(password) {
   return hash.toString();
 }
 
-// Initialize or get global data store
-function getDataStore() {
-  if (!globalDataStore) {
-    globalDataStore = {
-    users: [
-      {
-        id: 1,
-        username: 'admin',
-        password: hashPassword('admin123'),
-        user_type: 'admin',
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 2,
-        username: 'user_a',
-        password: hashPassword('passworda'),
-        user_type: 'a',
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 3,
-        username: 'user_b',
-        password: hashPassword('passwordb'),
-        user_type: 'b',
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 4,
-        username: 'user_c',
-        password: hashPassword('passwordc'),
-        user_type: 'c',
-        created_at: new Date().toISOString()
-      }
-    ],
-    images: [
-      // Basic images (7)
-      {id: 1, name: 'Nature 1', filename: 'basic1.jpg', category: 'basic', created_at: new Date().toISOString()},
-      {id: 2, name: 'Nature 2', filename: 'basic2.jpg', category: 'basic', created_at: new Date().toISOString()},
-      {id: 3, name: 'Nature 3', filename: 'basic3.jpg', category: 'basic', created_at: new Date().toISOString()},
-      {id: 4, name: 'Nature 4', filename: 'basic4.jpg', category: 'basic', created_at: new Date().toISOString()},
-      {id: 5, name: 'Nature 5', filename: 'basic5.jpg', category: 'basic', created_at: new Date().toISOString()},
-      {id: 6, name: 'Nature 6', filename: 'basic6.jpg', category: 'basic', created_at: new Date().toISOString()},
-      {id: 7, name: 'Nature 7', filename: 'basic7.jpg', category: 'basic', created_at: new Date().toISOString()},
-      // Intermediate images (7)
-      {id: 8, name: 'City 1', filename: 'intermediate1.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-      {id: 9, name: 'City 2', filename: 'intermediate2.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-      {id: 10, name: 'City 3', filename: 'intermediate3.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-      {id: 11, name: 'City 4', filename: 'intermediate4.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-      {id: 12, name: 'City 5', filename: 'intermediate5.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-      {id: 13, name: 'City 6', filename: 'intermediate6.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-      {id: 14, name: 'City 7', filename: 'intermediate7.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-      // Advanced images (7)
-      {id: 15, name: 'Abstract 1', filename: 'advanced1.jpg', category: 'advanced', created_at: new Date().toISOString()},
-      {id: 16, name: 'Abstract 2', filename: 'advanced2.jpg', category: 'advanced', created_at: new Date().toISOString()},
-      {id: 17, name: 'Abstract 3', filename: 'advanced3.jpg', category: 'advanced', created_at: new Date().toISOString()},
-      {id: 18, name: 'Abstract 4', filename: 'advanced4.jpg', category: 'advanced', created_at: new Date().toISOString()},
-      {id: 19, name: 'Abstract 5', filename: 'advanced5.jpg', category: 'advanced', created_at: new Date().toISOString()},
-      {id: 20, name: 'Abstract 6', filename: 'advanced6.jpg', category: 'advanced', created_at: new Date().toISOString()},
-      {id: 21, name: 'Abstract 7', filename: 'advanced7.jpg', category: 'advanced', created_at: new Date().toISOString()}
-    ],
-    clicks: [],
-    nextUserId: 5,
-    nextImageId: 22,
-     nextClickId: 1
-   };
+// Default data structure
+const defaultData = {
+  users: [
+    {
+      id: 1,
+      username: 'admin',
+      password: hashPassword('admin123'),
+      user_type: 'admin',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 2,
+      username: 'user_a',
+      password: hashPassword('passworda'),
+      user_type: 'a',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 3,
+      username: 'user_b',
+      password: hashPassword('passwordb'),
+      user_type: 'b',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 4,
+      username: 'user_c',
+      password: hashPassword('passwordc'),
+      user_type: 'c',
+      created_at: new Date().toISOString()
+    }
+  ],
+  images: [
+    // Basic images (7)
+    {id: 1, name: 'Nature 1', filename: 'basic1.jpg', category: 'basic', created_at: new Date().toISOString()},
+    {id: 2, name: 'Nature 2', filename: 'basic2.jpg', category: 'basic', created_at: new Date().toISOString()},
+    {id: 3, name: 'Nature 3', filename: 'basic3.jpg', category: 'basic', created_at: new Date().toISOString()},
+    {id: 4, name: 'Nature 4', filename: 'basic4.jpg', category: 'basic', created_at: new Date().toISOString()},
+    {id: 5, name: 'Nature 5', filename: 'basic5.jpg', category: 'basic', created_at: new Date().toISOString()},
+    {id: 6, name: 'Nature 6', filename: 'basic6.jpg', category: 'basic', created_at: new Date().toISOString()},
+    {id: 7, name: 'Nature 7', filename: 'basic7.jpg', category: 'basic', created_at: new Date().toISOString()},
+    // Intermediate images (7)
+    {id: 8, name: 'City 1', filename: 'intermediate1.jpg', category: 'intermediate', created_at: new Date().toISOString()},
+    {id: 9, name: 'City 2', filename: 'intermediate2.jpg', category: 'intermediate', created_at: new Date().toISOString()},
+    {id: 10, name: 'City 3', filename: 'intermediate3.jpg', category: 'intermediate', created_at: new Date().toISOString()},
+    {id: 11, name: 'City 4', filename: 'intermediate4.jpg', category: 'intermediate', created_at: new Date().toISOString()},
+    {id: 12, name: 'City 5', filename: 'intermediate5.jpg', category: 'intermediate', created_at: new Date().toISOString()},
+    {id: 13, name: 'City 6', filename: 'intermediate6.jpg', category: 'intermediate', created_at: new Date().toISOString()},
+    {id: 14, name: 'City 7', filename: 'intermediate7.jpg', category: 'intermediate', created_at: new Date().toISOString()},
+    // Advanced images (7)
+    {id: 15, name: 'Abstract 1', filename: 'advanced1.jpg', category: 'advanced', created_at: new Date().toISOString()},
+    {id: 16, name: 'Abstract 2', filename: 'advanced2.jpg', category: 'advanced', created_at: new Date().toISOString()},
+    {id: 17, name: 'Abstract 3', filename: 'advanced3.jpg', category: 'advanced', created_at: new Date().toISOString()},
+    {id: 18, name: 'Abstract 4', filename: 'advanced4.jpg', category: 'advanced', created_at: new Date().toISOString()},
+    {id: 19, name: 'Abstract 5', filename: 'advanced5.jpg', category: 'advanced', created_at: new Date().toISOString()},
+    {id: 20, name: 'Abstract 6', filename: 'advanced6.jpg', category: 'advanced', created_at: new Date().toISOString()},
+    {id: 21, name: 'Abstract 7', filename: 'advanced7.jpg', category: 'advanced', created_at: new Date().toISOString()}
+  ],
+  clicks: [],
+  nextUserId: 5,
+  nextImageId: 22,
+  nextClickId: 1
+};
+
+// Load data from KV storage or return default
+async function loadData() {
+  try {
+    const data = await kv.get('eratronics_data');
+    return data || defaultData;
+  } catch (error) {
+    console.error('Error loading data from KV:', error);
+    return defaultData;
   }
-  return globalDataStore;
 }
 
-export default function handler(req, res) {
+// Save data to KV storage
+async function saveData(dataStore) {
+  try {
+    await kv.set('eratronics_data', dataStore);
+  } catch (error) {
+    console.error('Error saving data to KV:', error);
+  }
+}
+
+export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -93,8 +110,8 @@ export default function handler(req, res) {
     return;
   }
 
-  // Get global data store
-  let dataStore = getDataStore();
+  // Load data from KV storage
+  let dataStore = await loadData();
 
   function verifyPassword(password, hash) {
     return hashPassword(password) === hash;
@@ -207,6 +224,7 @@ export default function handler(req, res) {
           };
 
            dataStore.users.push(newUser);
+           await saveData(dataStore);
            res.status(201).json({ success: true, user: newUser });
         } else if (path === '/images') {
           const { name, category, filename, imageData } = body;
@@ -221,6 +239,7 @@ export default function handler(req, res) {
           };
 
            dataStore.images.push(newImage);
+           await saveData(dataStore);
            res.status(201).json({ success: true, image: newImage });
         } else if (path === '/clicks') {
           const { user_id, image_id } = body;
@@ -233,6 +252,7 @@ export default function handler(req, res) {
           };
 
            dataStore.clicks.push(newClick);
+           await saveData(dataStore);
            res.status(201).json({ success: true, click: newClick });
         } else if (path === '/users/bulk') {
           const { users } = body;
@@ -263,6 +283,7 @@ export default function handler(req, res) {
              }
            });
 
+           await saveData(dataStore);
            res.status(200).json({
             success: true, 
             successCount, 
@@ -286,6 +307,7 @@ export default function handler(req, res) {
 
            dataStore.users.splice(userIndex, 1);
            dataStore.clicks = dataStore.clicks.filter(c => c.user_id !== userId);
+           await saveData(dataStore);
            res.status(200).json({ success: true });
         } else if (path.startsWith('/images/')) {
           const imageId = parseInt(path.split('/')[2]);
@@ -298,6 +320,7 @@ export default function handler(req, res) {
 
            dataStore.images.splice(imageIndex, 1);
            dataStore.clicks = dataStore.clicks.filter(c => c.image_id !== imageId);
+           await saveData(dataStore);
            res.status(200).json({ success: true });
         } else {
           res.status(404).json({ success: false, message: 'Endpoint not found' });
