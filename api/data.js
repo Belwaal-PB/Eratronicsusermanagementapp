@@ -4,6 +4,17 @@ import path from 'path';
 
 const DATA_FILE = '/tmp/data.json';
 
+// Hash password function
+function hashPassword(password) {
+  let hash = 0;
+  for (let i = 0; i < password.length; i++) {
+    const char = password.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString();
+}
+
 // Load data from file or create default data
 function loadData() {
   try {
@@ -102,16 +113,6 @@ export default function handler(req, res) {
 
   // Load data from persistent storage
   let dataStore = loadData();
-
-  function hashPassword(password) {
-    let hash = 0;
-    for (let i = 0; i < password.length; i++) {
-      const char = password.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return hash.toString();
-  }
 
   function verifyPassword(password, hash) {
     return hashPassword(password) === hash;
