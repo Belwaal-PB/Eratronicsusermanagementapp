@@ -5,7 +5,6 @@
   "main": "index.html",
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo 'No build step required for static site'",
     "start": "echo 'Static site - serve index.html'"
   },
   "keywords": [
