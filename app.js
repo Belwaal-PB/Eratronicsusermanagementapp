@@ -203,7 +203,7 @@ class EratronicsApp {
                     <div class="login-container fade-in">
                         <div class="card-header text-center">
                             <div class="mb-3">
-                                <i class="bi bi-shield-check text-white" style="font-size: 3rem;"></i>
+                                <img src="static/Eratronics Selectit logo.png" alt="Eratronics Selectit" style="height: 60px; width: auto;">
                             </div>
                             <h4 class="mb-0 text-white fw-bold">Welcome Back</h4>
                             <p class="text-white-50 mb-0">Sign in to your account to continue</p>
@@ -340,7 +340,7 @@ class EratronicsApp {
                     <div class="dashboard-header fade-in">
                         <div class="d-flex align-items-center justify-content-center mb-3">
                             <div class="me-3">
-                                <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
+                                <img src="static/Eratronics Selectit logo.png" alt="Eratronics Selectit" style="height: 60px; width: auto;">
                             </div>
                             <div class="text-center">
                                 <h1 class="mb-1">Admin Dashboard</h1>
