@@ -32,6 +32,11 @@ class EratronicsApp {
                 this.users = data.users || [];
                 this.images = data.images || [];
                 this.clicks = data.clicks || [];
+                
+                // If user is logged in, refresh the dashboard to show updated data
+                if (this.currentUser) {
+                    this.showDashboard();
+                }
             } else {
                 console.error('Failed to load data from API');
                 this.showAlert('Failed to load data. Please refresh the page.', 'danger');
@@ -400,6 +405,13 @@ class EratronicsApp {
         `;
     }
 
+    // Refresh admin dashboard data
+    async refreshAdminData() {
+        if (this.currentUser && this.currentUser.user_type === 'admin') {
+            await this.loadData();
+        }
+    }
+
     showAdminSection(section) {
         // Update nav links
         document.querySelectorAll('.admin-nav .nav-link').forEach(link => {
@@ -416,22 +428,24 @@ class EratronicsApp {
 
         // Show content with fade-in animation
         const adminContent = document.getElementById('adminContent');
-        adminContent.style.opacity = '0';
-        
-        setTimeout(() => {
-            switch(section) {
-                case 'users':
-                    adminContent.innerHTML = this.renderAdminUsers();
-                    break;
-                case 'images':
-                    adminContent.innerHTML = this.renderAdminImages();
-                    break;
-                case 'statistics':
-                    adminContent.innerHTML = this.renderAdminStatistics();
-                    break;
-            }
-            adminContent.style.opacity = '1';
-        }, 150);
+        if (adminContent) {
+            adminContent.style.opacity = '0';
+            
+            setTimeout(() => {
+                switch(section) {
+                    case 'users':
+                        adminContent.innerHTML = this.renderAdminUsers();
+                        break;
+                    case 'images':
+                        adminContent.innerHTML = this.renderAdminImages();
+                        break;
+                    case 'statistics':
+                        adminContent.innerHTML = this.renderAdminStatistics();
+                        break;
+                }
+                adminContent.style.opacity = '1';
+            }, 150);
+        }
     }
 
     // Image Management
@@ -578,6 +592,9 @@ class EratronicsApp {
                 ));
                 this.showAlert(`Successfully selected ${selectedImages.length} image(s)!`, 'success');
                 this.deselectAllImages();
+                
+                // Refresh data to get updated click counts
+                await this.loadData();
             } catch (error) {
                 console.error('Error submitting image selection:', error);
                 this.showAlert('Error submitting selection. Please try again.', 'danger');
