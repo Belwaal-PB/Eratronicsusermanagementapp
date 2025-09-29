@@ -1,17 +1,22 @@
 // Simple API endpoint for data management
-export default function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+import fs from 'fs';
+import path from 'path';
 
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+const DATA_FILE = '/tmp/data.json';
+
+// Load data from file or create default data
+function loadData() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const data = fs.readFileSync(DATA_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Error loading data:', error);
   }
-
-  // Simple in-memory storage (in production, you'd use a database)
-  let dataStore = {
+  
+  // Return default data if file doesn't exist or error occurs
+  return {
     users: [
       {
         id: 1,
@@ -71,8 +76,32 @@ export default function handler(req, res) {
     clicks: [],
     nextUserId: 5,
     nextImageId: 22,
-    nextClickId: 1
-  };
+     nextClickId: 1
+   };
+}
+
+// Save data to file
+function saveData(dataStore) {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(dataStore, null, 2));
+  } catch (error) {
+    console.error('Error saving data:', error);
+  }
+}
+
+export default function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  // Load data from persistent storage
+  let dataStore = loadData();
 
   function hashPassword(password) {
     let hash = 0;
@@ -194,8 +223,9 @@ export default function handler(req, res) {
             created_at: new Date().toISOString()
           };
 
-          dataStore.users.push(newUser);
-          res.status(201).json({ success: true, user: newUser });
+           dataStore.users.push(newUser);
+           saveData(dataStore);
+           res.status(201).json({ success: true, user: newUser });
         } else if (path === '/images') {
           const { name, category, filename, imageData } = body;
           
@@ -208,8 +238,9 @@ export default function handler(req, res) {
             created_at: new Date().toISOString()
           };
 
-          dataStore.images.push(newImage);
-          res.status(201).json({ success: true, image: newImage });
+           dataStore.images.push(newImage);
+           saveData(dataStore);
+           res.status(201).json({ success: true, image: newImage });
         } else if (path === '/clicks') {
           const { user_id, image_id } = body;
           
@@ -220,8 +251,9 @@ export default function handler(req, res) {
             clicked_at: new Date().toISOString()
           };
 
-          dataStore.clicks.push(newClick);
-          res.status(201).json({ success: true, click: newClick });
+           dataStore.clicks.push(newClick);
+           saveData(dataStore);
+           res.status(201).json({ success: true, click: newClick });
         } else if (path === '/users/bulk') {
           const { users } = body;
           let successCount = 0;
@@ -244,14 +276,15 @@ export default function handler(req, res) {
                 created_at: new Date().toISOString()
               };
 
-              dataStore.users.push(newUser);
-              successCount++;
-            } catch (error) {
-              errors.push(`Row ${index + 1}: ${error.message}`);
-            }
-          });
+               dataStore.users.push(newUser);
+               successCount++;
+             } catch (error) {
+               errors.push(`Row ${index + 1}: ${error.message}`);
+             }
+           });
 
-          res.status(200).json({ 
+           saveData(dataStore);
+           res.status(200).json({
             success: true, 
             successCount, 
             errorCount: errors.length,
@@ -272,9 +305,10 @@ export default function handler(req, res) {
             return;
           }
 
-          dataStore.users.splice(userIndex, 1);
-          dataStore.clicks = dataStore.clicks.filter(c => c.user_id !== userId);
-          res.status(200).json({ success: true });
+           dataStore.users.splice(userIndex, 1);
+           dataStore.clicks = dataStore.clicks.filter(c => c.user_id !== userId);
+           saveData(dataStore);
+           res.status(200).json({ success: true });
         } else if (path.startsWith('/images/')) {
           const imageId = parseInt(path.split('/')[2]);
           const imageIndex = dataStore.images.findIndex(i => i.id === imageId);
@@ -284,9 +318,10 @@ export default function handler(req, res) {
             return;
           }
 
-          dataStore.images.splice(imageIndex, 1);
-          dataStore.clicks = dataStore.clicks.filter(c => c.image_id !== imageId);
-          res.status(200).json({ success: true });
+           dataStore.images.splice(imageIndex, 1);
+           dataStore.clicks = dataStore.clicks.filter(c => c.image_id !== imageId);
+           saveData(dataStore);
+           res.status(200).json({ success: true });
         } else {
           res.status(404).json({ success: false, message: 'Endpoint not found' });
         }
