@@ -3,7 +3,7 @@
   "outputDirectory": ".",
   "functions": {
     "api/data.php": {
-      "runtime": "php@1.0.0"
+      "runtime": "now-php@1.0.0"
     }
   },
   "rewrites": [
