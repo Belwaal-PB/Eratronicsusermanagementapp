@@ -16,6 +16,9 @@
   ],
   "author": "Eratronics",
   "license": "MIT",
+  "dependencies": {
+    "@vercel/node": "^3.0.0"
+  },
   "devDependencies": {
     "vercel": "^32.0.0"
   },

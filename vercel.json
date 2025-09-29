@@ -1,9 +1,18 @@
 {
   "buildCommand": "",
   "outputDirectory": ".",
+  "functions": {
+    "api/data.js": {
+      "runtime": "@vercel/node"
+    }
+  },
   "rewrites": [
     {
-      "source": "/((?!static/).*)",
+      "source": "/api/(.*)",
+      "destination": "/api/data"
+    },
+    {
+      "source": "/((?!static/|api/).*)",
       "destination": "/index.html"
     }
   ],

@@ -5,9 +5,7 @@ class EratronicsApp {
         this.users = [];
         this.images = [];
         this.clicks = [];
-        this.nextUserId = 1;
-        this.nextImageId = 1;
-        this.nextClickId = 1;
+        this.apiBase = '/api/data';
         
         this.init();
     }
@@ -19,111 +17,39 @@ class EratronicsApp {
     }
 
     // Data Management
-    loadData() {
-        // Load users
-        const savedUsers = localStorage.getItem('eratronics_users');
-        if (savedUsers) {
-            this.users = JSON.parse(savedUsers);
-            this.nextUserId = Math.max(...this.users.map(u => u.id), 0) + 1;
-        } else {
-            this.initializeDefaultData();
-        }
+    async loadData() {
+        try {
+            // Load current user from localStorage (for session persistence)
+            const savedUser = localStorage.getItem('eratronics_current_user');
+            if (savedUser) {
+                this.currentUser = JSON.parse(savedUser);
+            }
 
-        // Load images
-        const savedImages = localStorage.getItem('eratronics_images');
-        if (savedImages) {
-            this.images = JSON.parse(savedImages);
-            this.nextImageId = Math.max(...this.images.map(i => i.id), 0) + 1;
-        }
-
-        // Load clicks
-        const savedClicks = localStorage.getItem('eratronics_clicks');
-        if (savedClicks) {
-            this.clicks = JSON.parse(savedClicks);
-            this.nextClickId = Math.max(...this.clicks.map(c => c.id), 0) + 1;
-        }
-
-        // Load current user
-        const savedUser = localStorage.getItem('eratronics_current_user');
-        if (savedUser) {
-            this.currentUser = JSON.parse(savedUser);
+            // Load all data from API
+            const response = await fetch(this.apiBase);
+            if (response.ok) {
+                const data = await response.json();
+                this.users = data.users || [];
+                this.images = data.images || [];
+                this.clicks = data.clicks || [];
+            } else {
+                console.error('Failed to load data from API');
+                this.showAlert('Failed to load data. Please refresh the page.', 'danger');
+            }
+        } catch (error) {
+            console.error('Error loading data:', error);
+            this.showAlert('Error loading data. Please check your connection.', 'danger');
         }
     }
 
-    saveData() {
-        localStorage.setItem('eratronics_users', JSON.stringify(this.users));
-        localStorage.setItem('eratronics_images', JSON.stringify(this.images));
-        localStorage.setItem('eratronics_clicks', JSON.stringify(this.clicks));
+    async saveData() {
+        // Data is now saved via API calls, no need for localStorage
+        // Keep current user in localStorage for session persistence
         if (this.currentUser) {
             localStorage.setItem('eratronics_current_user', JSON.stringify(this.currentUser));
         }
     }
 
-    initializeDefaultData() {
-        // Default users
-        this.users = [
-            {
-                id: 1,
-                username: 'admin',
-                password: this.hashPassword('admin123'),
-                user_type: 'admin',
-                created_at: new Date().toISOString()
-            },
-            {
-                id: 2,
-                username: 'user_a',
-                password: this.hashPassword('passworda'),
-                user_type: 'a',
-                created_at: new Date().toISOString()
-            },
-            {
-                id: 3,
-                username: 'user_b',
-                password: this.hashPassword('passwordb'),
-                user_type: 'b',
-                created_at: new Date().toISOString()
-            },
-            {
-                id: 4,
-                username: 'user_c',
-                password: this.hashPassword('passwordc'),
-                user_type: 'c',
-                created_at: new Date().toISOString()
-            }
-        ];
-        this.nextUserId = 5;
-
-        // Default images
-        this.images = [
-            // Basic images (7)
-            {id: 1, name: 'Nature 1', filename: 'basic1.jpg', category: 'basic', created_at: new Date().toISOString()},
-            {id: 2, name: 'Nature 2', filename: 'basic2.jpg', category: 'basic', created_at: new Date().toISOString()},
-            {id: 3, name: 'Nature 3', filename: 'basic3.jpg', category: 'basic', created_at: new Date().toISOString()},
-            {id: 4, name: 'Nature 4', filename: 'basic4.jpg', category: 'basic', created_at: new Date().toISOString()},
-            {id: 5, name: 'Nature 5', filename: 'basic5.jpg', category: 'basic', created_at: new Date().toISOString()},
-            {id: 6, name: 'Nature 6', filename: 'basic6.jpg', category: 'basic', created_at: new Date().toISOString()},
-            {id: 7, name: 'Nature 7', filename: 'basic7.jpg', category: 'basic', created_at: new Date().toISOString()},
-            // Intermediate images (7)
-            {id: 8, name: 'City 1', filename: 'intermediate1.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-            {id: 9, name: 'City 2', filename: 'intermediate2.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-            {id: 10, name: 'City 3', filename: 'intermediate3.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-            {id: 11, name: 'City 4', filename: 'intermediate4.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-            {id: 12, name: 'City 5', filename: 'intermediate5.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-            {id: 13, name: 'City 6', filename: 'intermediate6.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-            {id: 14, name: 'City 7', filename: 'intermediate7.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-            // Advanced images (7)
-            {id: 15, name: 'Abstract 1', filename: 'advanced1.jpg', category: 'advanced', created_at: new Date().toISOString()},
-            {id: 16, name: 'Abstract 2', filename: 'advanced2.jpg', category: 'advanced', created_at: new Date().toISOString()},
-            {id: 17, name: 'Abstract 3', filename: 'advanced3.jpg', category: 'advanced', created_at: new Date().toISOString()},
-            {id: 18, name: 'Abstract 4', filename: 'advanced4.jpg', category: 'advanced', created_at: new Date().toISOString()},
-            {id: 19, name: 'Abstract 5', filename: 'advanced5.jpg', category: 'advanced', created_at: new Date().toISOString()},
-            {id: 20, name: 'Abstract 6', filename: 'advanced6.jpg', category: 'advanced', created_at: new Date().toISOString()},
-            {id: 21, name: 'Abstract 7', filename: 'advanced7.jpg', category: 'advanced', created_at: new Date().toISOString()}
-        ];
-        this.nextImageId = 22;
-
-        this.saveData();
-    }
 
     // Authentication
     hashPassword(password) {
@@ -141,18 +67,29 @@ class EratronicsApp {
         return this.hashPassword(password) === hash;
     }
 
-    login(username, password) {
-        const user = this.users.find(u => u.username === username);
-        if (user && this.verifyPassword(password, user.password)) {
-            this.currentUser = {
-                id: user.id,
-                username: user.username,
-                user_type: user.user_type
-            };
-            this.saveData();
-            return true;
+    async login(username, password) {
+        try {
+            const response = await fetch(`${this.apiBase}/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    this.currentUser = result.user;
+                    await this.saveData();
+                    return true;
+                }
+            }
+            return false;
+        } catch (error) {
+            console.error('Login error:', error);
+            return false;
         }
-        return false;
     }
 
     logout() {
@@ -173,12 +110,12 @@ class EratronicsApp {
     // Event Listeners
     setupEventListeners() {
         // Login form
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
-            if (this.login(username, password)) {
+            if (await this.login(username, password)) {
                 this.showAlert('Login successful!', 'success');
                 this.hideModal('loginModal');
                 this.updateNavbar();
@@ -294,12 +231,12 @@ class EratronicsApp {
         `;
         
         // Re-attach event listener
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
-            if (this.login(username, password)) {
+            if (await this.login(username, password)) {
                 this.showAlert('Login successful!', 'success');
                 this.updateNavbar();
                 this.showDashboard();
@@ -624,7 +561,7 @@ class EratronicsApp {
         });
     }
 
-    submitImageSelection() {
+    async submitImageSelection() {
         const selectedImages = Array.from(document.querySelectorAll('.image-checkbox:checked'))
                                    .map(cb => parseInt(cb.value));
         
@@ -634,11 +571,17 @@ class EratronicsApp {
         }
 
         if (confirm(`Are you sure you want to select ${selectedImages.length} image(s)?`)) {
-            selectedImages.forEach(imageId => {
-                this.addClick(this.currentUser.id, imageId);
-            });
-            this.showAlert(`Successfully selected ${selectedImages.length} image(s)!`, 'success');
-            this.deselectAllImages();
+            try {
+                // Add all clicks in parallel
+                await Promise.all(selectedImages.map(imageId => 
+                    this.addClick(this.currentUser.id, imageId)
+                ));
+                this.showAlert(`Successfully selected ${selectedImages.length} image(s)!`, 'success');
+                this.deselectAllImages();
+            } catch (error) {
+                console.error('Error submitting image selection:', error);
+                this.showAlert('Error submitting selection. Please try again.', 'danger');
+            }
         }
     }
 
@@ -918,48 +861,75 @@ class EratronicsApp {
     }
 
     // Data Operations
-    addUser() {
+    async addUser() {
         const username = document.getElementById('newUsername').value;
         const password = document.getElementById('newPassword').value;
         const userType = document.getElementById('newUserType').value;
 
-        if (this.users.find(u => u.username === username)) {
-            this.showAlert('Username already exists', 'danger');
-            return;
+        try {
+            const response = await fetch(`${this.apiBase}/users`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password, user_type: userType })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    this.users.push(result.user);
+                    this.showAlert('User added successfully!', 'success');
+                    this.hideModal('addUserModal');
+                    document.getElementById('addUserForm').reset();
+                    this.showAdminSection('users');
+                } else {
+                    this.showAlert(result.message || 'Failed to add user', 'danger');
+                }
+            } else {
+                const error = await response.json();
+                this.showAlert(error.message || 'Failed to add user', 'danger');
+            }
+        } catch (error) {
+            console.error('Add user error:', error);
+            this.showAlert('Error adding user. Please try again.', 'danger');
         }
-
-        const newUser = {
-            id: this.nextUserId++,
-            username: username,
-            password: this.hashPassword(password),
-            user_type: userType,
-            created_at: new Date().toISOString()
-        };
-
-        this.users.push(newUser);
-        this.saveData();
-        this.showAlert('User added successfully!', 'success');
-        this.hideModal('addUserModal');
-        document.getElementById('addUserForm').reset();
-        this.showAdminSection('users');
     }
 
-    deleteUser(userId) {
+    async deleteUser(userId) {
         if (userId === this.currentUser.id) {
             this.showAlert('You cannot delete your own account.', 'danger');
             return;
         }
 
         if (confirm('Are you sure you want to delete this user?')) {
-            this.users = this.users.filter(u => u.id !== userId);
-            this.clicks = this.clicks.filter(c => c.user_id !== userId);
-            this.saveData();
-            this.showAlert('User deleted successfully!', 'success');
-            this.showAdminSection('users');
+            try {
+                const response = await fetch(`${this.apiBase}/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        this.users = this.users.filter(u => u.id !== userId);
+                        this.clicks = this.clicks.filter(c => c.user_id !== userId);
+                        this.showAlert('User deleted successfully!', 'success');
+                        this.showAdminSection('users');
+                    } else {
+                        this.showAlert(result.message || 'Failed to delete user', 'danger');
+                    }
+                } else {
+                    const error = await response.json();
+                    this.showAlert(error.message || 'Failed to delete user', 'danger');
+                }
+            } catch (error) {
+                console.error('Delete user error:', error);
+                this.showAlert('Error deleting user. Please try again.', 'danger');
+            }
         }
     }
 
-    addImage() {
+    async addImage() {
         const name = document.getElementById('imageName').value;
         const category = document.getElementById('imageCategory').value;
         const fileInput = document.getElementById('imageFile');
@@ -974,48 +944,93 @@ class EratronicsApp {
 
         // Create a preview URL for the uploaded image
         const reader = new FileReader();
-        reader.onload = (e) => {
-            // Store the image data as base64 in localStorage for demo purposes
-            const imageData = e.target.result;
-            
-            const newImage = {
-                id: this.nextImageId++,
-                name: name,
-                filename: filename,
-                category: category,
-                imageData: imageData, // Store base64 data
-                created_at: new Date().toISOString()
-            };
+        reader.onload = async (e) => {
+            try {
+                const imageData = e.target.result;
+                
+                const response = await fetch(`${this.apiBase}/images`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        name, 
+                        category, 
+                        filename, 
+                        imageData 
+                    })
+                });
 
-            this.images.push(newImage);
-            this.saveData();
-            this.showAlert('Image added successfully!', 'success');
-            this.hideModal('addImageModal');
-            document.getElementById('addImageForm').reset();
-            this.showAdminSection('images');
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        this.images.push(result.image);
+                        this.showAlert('Image added successfully!', 'success');
+                        this.hideModal('addImageModal');
+                        document.getElementById('addImageForm').reset();
+                        this.showAdminSection('images');
+                    } else {
+                        this.showAlert(result.message || 'Failed to add image', 'danger');
+                    }
+                } else {
+                    const error = await response.json();
+                    this.showAlert(error.message || 'Failed to add image', 'danger');
+                }
+            } catch (error) {
+                console.error('Add image error:', error);
+                this.showAlert('Error adding image. Please try again.', 'danger');
+            }
         };
         reader.readAsDataURL(file);
     }
 
-    deleteImage(imageId) {
+    async deleteImage(imageId) {
         if (confirm('Are you sure you want to delete this image?')) {
-            this.images = this.images.filter(i => i.id !== imageId);
-            this.clicks = this.clicks.filter(c => c.image_id !== imageId);
-            this.saveData();
-            this.showAlert('Image deleted successfully!', 'success');
-            this.showAdminSection('images');
+            try {
+                const response = await fetch(`${this.apiBase}/images/${imageId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        this.images = this.images.filter(i => i.id !== imageId);
+                        this.clicks = this.clicks.filter(c => c.image_id !== imageId);
+                        this.showAlert('Image deleted successfully!', 'success');
+                        this.showAdminSection('images');
+                    } else {
+                        this.showAlert(result.message || 'Failed to delete image', 'danger');
+                    }
+                } else {
+                    const error = await response.json();
+                    this.showAlert(error.message || 'Failed to delete image', 'danger');
+                }
+            } catch (error) {
+                console.error('Delete image error:', error);
+                this.showAlert('Error deleting image. Please try again.', 'danger');
+            }
         }
     }
 
-    addClick(userId, imageId) {
-        const newClick = {
-            id: this.nextClickId++,
-            user_id: userId,
-            image_id: imageId,
-            clicked_at: new Date().toISOString()
-        };
-        this.clicks.push(newClick);
-        this.saveData();
+    async addClick(userId, imageId) {
+        try {
+            const response = await fetch(`${this.apiBase}/clicks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user_id: userId, image_id: imageId })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    this.clicks.push(result.click);
+                }
+            }
+        } catch (error) {
+            console.error('Add click error:', error);
+        }
     }
 
     getStatistics() {
@@ -1065,7 +1080,7 @@ class EratronicsApp {
         return { stats, summary };
     }
 
-    uploadExcel() {
+    async uploadExcel() {
         const fileInput = document.getElementById('excelFile');
         const file = fileInput.files[0];
         
@@ -1075,7 +1090,7 @@ class EratronicsApp {
         }
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
@@ -1097,8 +1112,8 @@ class EratronicsApp {
                     return;
                 }
 
-                let successCount = 0;
-                let errorCount = 0;
+                // Process and validate data
+                const users = [];
                 const errors = [];
 
                 jsonData.forEach((row, index) => {
@@ -1109,55 +1124,65 @@ class EratronicsApp {
 
                         if (!username || !password) {
                             errors.push(`Row ${index + 2}: Username and password cannot be empty`);
-                            errorCount++;
                             return;
                         }
 
                         if (!['admin', 'a', 'b', 'c'].includes(userType)) {
                             errors.push(`Row ${index + 2}: Invalid user_type '${userType}'. Must be admin, A, B, or C`);
-                            errorCount++;
                             return;
                         }
 
-                        if (this.users.find(u => u.username === username)) {
-                            errors.push(`Row ${index + 2}: Username '${username}' already exists`);
-                            errorCount++;
-                            return;
-                        }
-
-                        const newUser = {
-                            id: this.nextUserId++,
-                            username: username,
-                            password: this.hashPassword(password),
-                            user_type: userType,
-                            created_at: new Date().toISOString()
-                        };
-
-                        this.users.push(newUser);
-                        successCount++;
+                        users.push({ username, password, user_type: userType });
                     } catch (error) {
                         errors.push(`Row ${index + 2}: ${error.message}`);
-                        errorCount++;
                     }
                 });
 
-                this.saveData();
-
-                if (successCount > 0) {
-                    this.showAlert(`Successfully created ${successCount} user(s) from Excel file!`, 'success');
-                }
-
-                if (errorCount > 0) {
+                if (errors.length > 0) {
                     const errorMsg = errors.slice(0, 5).join('; ');
                     const moreErrors = errors.length > 5 ? ` ... and ${errors.length - 5} more errors` : '';
-                    this.showAlert(`Failed to create ${errorCount} user(s). Errors: ${errorMsg}${moreErrors}`, 'warning');
+                    this.showAlert(`Validation errors: ${errorMsg}${moreErrors}`, 'warning');
+                    return;
                 }
 
-                this.hideModal('uploadExcelModal');
-                document.getElementById('uploadExcelForm').reset();
-                this.showAdminSection('users');
+                // Send to API
+                const response = await fetch(`${this.apiBase}/users/bulk`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ users })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        // Reload data to get updated user list
+                        await this.loadData();
+                        
+                        if (result.successCount > 0) {
+                            this.showAlert(`Successfully created ${result.successCount} user(s) from Excel file!`, 'success');
+                        }
+
+                        if (result.errorCount > 0) {
+                            const errorMsg = result.errors.slice(0, 5).join('; ');
+                            const moreErrors = result.errors.length > 5 ? ` ... and ${result.errors.length - 5} more errors` : '';
+                            this.showAlert(`Failed to create ${result.errorCount} user(s). Errors: ${errorMsg}${moreErrors}`, 'warning');
+                        }
+
+                        this.hideModal('uploadExcelModal');
+                        document.getElementById('uploadExcelForm').reset();
+                        this.showAdminSection('users');
+                    } else {
+                        this.showAlert(result.message || 'Failed to upload Excel file', 'danger');
+                    }
+                } else {
+                    const error = await response.json();
+                    this.showAlert(error.message || 'Failed to upload Excel file', 'danger');
+                }
 
             } catch (error) {
+                console.error('Upload Excel error:', error);
                 this.showAlert(`Error processing Excel file: ${error.message}`, 'danger');
             }
         };
