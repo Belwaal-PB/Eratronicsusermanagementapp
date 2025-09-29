@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eratronics User Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#" id="navbarBrand">
+                <i class="bi bi-shield-check me-2"></i>
+                Eratronics User Management
+            </a>
+            <div class="navbar-nav ms-auto d-flex align-items-center">
+                <span class="navbar-text me-3" id="userInfo" style="display: none;">
+                    <i class="bi bi-person-circle me-1"></i>
+                    Welcome
+                    <span class="badge bg-primary ms-1" id="currentUserType"></span>
+                </span>
+                <a class="nav-link d-flex align-items-center" href="#" id="loginLink" style="display: none;">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>
+                    Login
+                </a>
+                <a class="nav-link d-flex align-items-center" href="#" id="logoutLink" style="display: none;">
+                    <i class="bi bi-box-arrow-right me-1"></i>
+                    Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div id="alertContainer"></div>
+        <div id="mainContent">
+            <!-- Content will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header text-center">
+                    <div class="w-100">
+                        <div class="mb-3">
+                            <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
+                        </div>
+                        <h4 class="modal-title fw-bold" id="loginModalLabel">Welcome Back</h4>
+                        <p class="text-muted mb-0">Sign in to your account to continue</p>
+                    </div>
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="bi bi-person me-1"></i>Username
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="username" name="username" 
+                                   placeholder="Enter your username" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label">
+                                <i class="bi bi-lock me-1"></i>Password
+                            </label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" 
+                                   placeholder="Enter your password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Sign In
+                        </button>
+                    </form>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-image text-primary me-2"></i>
+                        <h5 class="modal-title mb-0" id="imagePreviewModalLabel">Image Preview</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="mb-4">
+                        <h4 id="previewImageName" class="mb-2"></h4>
+                        <span id="previewImageCategory" class="badge fs-6"></span>
+                    </div>
+                    <div class="image-container bg-light rounded-3 p-4">
+                        <img id="previewImage" src="" alt="Preview" class="img-fluid rounded-3 shadow" 
+                             style="max-height: 70vh; object-fit: contain;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-person-plus text-primary me-2"></i>
+                        <h5 class="modal-title mb-0" id="addUserModalLabel">Add New User</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label for="newUsername" class="form-label">
+                                <i class="bi bi-person me-1"></i>Username
+                            </label>
+                            <input type="text" class="form-control" id="newUsername" name="username" 
+                                   placeholder="Enter username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">
+                                <i class="bi bi-lock me-1"></i>Password
+                            </label>
+                            <input type="password" class="form-control" id="newPassword" name="password" 
+                                   placeholder="Enter password" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="newUserType" class="form-label">
+                                <i class="bi bi-shield me-1"></i>User Type
+                            </label>
+                            <select class="form-select" id="newUserType" name="user_type" required>
+                                <option value="">Select User Type</option>
+                                <option value="admin">Admin</option>
+                                <option value="a">Type A - Basic Access</option>
+                                <option value="b">Type B - Intermediate Access</option>
+                                <option value="c">Type C - Advanced Access</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle me-2"></i>Add User
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Image Modal -->
+    <div class="modal fade" id="addImageModal" tabindex="-1" aria-labelledby="addImageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-image text-primary me-2"></i>
+                        <h5 class="modal-title mb-0" id="addImageModalLabel">Add New Image</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="addImageForm">
+                        <div class="mb-3">
+                            <label for="imageName" class="form-label">
+                                <i class="bi bi-tag me-1"></i>Image Name
+                            </label>
+                            <input type="text" class="form-control" id="imageName" name="name" 
+                                   placeholder="Enter image name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="imageCategory" class="form-label">
+                                <i class="bi bi-collection me-1"></i>Category
+                            </label>
+                            <select class="form-select" id="imageCategory" name="category" required>
+                                <option value="">Select Category</option>
+                                <option value="basic">Basic - Beginner Level</option>
+                                <option value="intermediate">Intermediate - Medium Level</option>
+                                <option value="advanced">Advanced - Expert Level</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="imageFile" class="form-label">
+                                <i class="bi bi-upload me-1"></i>Image File
+                            </label>
+                            <input type="file" class="form-control" id="imageFile" name="image_file" 
+                                   accept="image/*" required>
+                            <div class="form-text">Supported formats: JPG, PNG, GIF, WebP</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-upload me-2"></i>Upload Image
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Excel Modal -->
+    <div class="modal fade" id="uploadExcelModal" tabindex="-1" aria-labelledby="uploadExcelModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-file-earmark-excel text-success me-2"></i>
+                        <h5 class="modal-title mb-0" id="uploadExcelModalLabel">Upload Excel File</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-info d-flex align-items-start">
+                        <i class="bi bi-info-circle me-2 mt-1"></i>
+                        <div>
+                            <strong>Excel Format Required:</strong><br>
+                            The Excel file should contain these columns:<br>
+                            <code>username</code>, <code>password</code>, <code>user_type</code>
+                        </div>
+                    </div>
+                    <form id="uploadExcelForm">
+                        <div class="mb-4">
+                            <label for="excelFile" class="form-label">
+                                <i class="bi bi-file-earmark-arrow-up me-1"></i>Excel File
+                            </label>
+                            <input type="file" class="form-control" id="excelFile" name="excel_file" 
+                                   accept=".xlsx,.xls" required>
+                            <div class="form-text">Supported formats: .xlsx, .xls</div>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-upload me-2"></i>Upload Excel File
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "eratronics-user-management",
+  "version": "1.0.0",
+  "description": "A modern user management system with image selection capabilities",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required for static site'",
+    "start": "echo 'Static site - serve index.html'"
+  },
+  "keywords": [
+    "user-management",
+    "image-gallery",
+    "admin-dashboard",
+    "javascript",
+    "bootstrap"
+  ],
+  "author": "Eratronics",
+  "license": "MIT",
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
