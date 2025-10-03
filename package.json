@@ -18,7 +18,8 @@
   "license": "MIT",
   "dependencies": {
     "@vercel/node": "^3.0.0",
-    "@vercel/kv": "^1.0.0"
+    "@vercel/kv": "^1.0.0",
+    "@vercel/postgres": "^0.8.0"
   },
   "devDependencies": {
     "vercel": "^32.0.0"

@@ -1,8 +1,5 @@
-// Simple API endpoint for data management
-import { kv } from '@vercel/kv';
-
-// Global data store that persists during function lifetime
-let globalDataStore = null;
+// Postgres-based API endpoint for data management
+import { createClient } from '@vercel/postgres';
 
 // Hash password function
 function hashPassword(password) {
@@ -15,87 +12,37 @@ function hashPassword(password) {
   return hash.toString();
 }
 
-// Default data structure
-const defaultData = {
-  users: [
-    {
-      id: 1,
-      username: 'admin',
-      password: hashPassword('admin123'),
-      user_type: 'admin',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 2,
-      username: 'user_a',
-      password: hashPassword('passworda'),
-      user_type: 'a',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 3,
-      username: 'user_b',
-      password: hashPassword('passwordb'),
-      user_type: 'b',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 4,
-      username: 'user_c',
-      password: hashPassword('passwordc'),
-      user_type: 'c',
-      created_at: new Date().toISOString()
-    }
-  ],
-  images: [
-    // Basic images (7)
-    {id: 1, name: 'Nature 1', filename: 'basic1.jpg', category: 'basic', created_at: new Date().toISOString()},
-    {id: 2, name: 'Nature 2', filename: 'basic2.jpg', category: 'basic', created_at: new Date().toISOString()},
-    {id: 3, name: 'Nature 3', filename: 'basic3.jpg', category: 'basic', created_at: new Date().toISOString()},
-    {id: 4, name: 'Nature 4', filename: 'basic4.jpg', category: 'basic', created_at: new Date().toISOString()},
-    {id: 5, name: 'Nature 5', filename: 'basic5.jpg', category: 'basic', created_at: new Date().toISOString()},
-    {id: 6, name: 'Nature 6', filename: 'basic6.jpg', category: 'basic', created_at: new Date().toISOString()},
-    {id: 7, name: 'Nature 7', filename: 'basic7.jpg', category: 'basic', created_at: new Date().toISOString()},
-    // Intermediate images (7)
-    {id: 8, name: 'City 1', filename: 'intermediate1.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-    {id: 9, name: 'City 2', filename: 'intermediate2.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-    {id: 10, name: 'City 3', filename: 'intermediate3.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-    {id: 11, name: 'City 4', filename: 'intermediate4.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-    {id: 12, name: 'City 5', filename: 'intermediate5.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-    {id: 13, name: 'City 6', filename: 'intermediate6.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-    {id: 14, name: 'City 7', filename: 'intermediate7.jpg', category: 'intermediate', created_at: new Date().toISOString()},
-    // Advanced images (7)
-    {id: 15, name: 'Abstract 1', filename: 'advanced1.jpg', category: 'advanced', created_at: new Date().toISOString()},
-    {id: 16, name: 'Abstract 2', filename: 'advanced2.jpg', category: 'advanced', created_at: new Date().toISOString()},
-    {id: 17, name: 'Abstract 3', filename: 'advanced3.jpg', category: 'advanced', created_at: new Date().toISOString()},
-    {id: 18, name: 'Abstract 4', filename: 'advanced4.jpg', category: 'advanced', created_at: new Date().toISOString()},
-    {id: 19, name: 'Abstract 5', filename: 'advanced5.jpg', category: 'advanced', created_at: new Date().toISOString()},
-    {id: 20, name: 'Abstract 6', filename: 'advanced6.jpg', category: 'advanced', created_at: new Date().toISOString()},
-    {id: 21, name: 'Abstract 7', filename: 'advanced7.jpg', category: 'advanced', created_at: new Date().toISOString()}
-  ],
-  clicks: [],
-  nextUserId: 5,
-  nextImageId: 22,
-  nextClickId: 1
-};
-
-// Load data from KV storage or return default
-async function loadData() {
+// Database helper functions
+async function getUsers() {
+  const client = createClient();
   try {
-    const data = await kv.get('eratronics_data');
-    return data || defaultData;
-  } catch (error) {
-    console.error('Error loading data from KV:', error);
-    return defaultData;
+    await client.connect();
+    const result = await client.query('SELECT * FROM users ORDER BY created_at');
+    return result.rows;
+  } finally {
+    await client.end();
   }
 }
 
-// Save data to KV storage
-async function saveData(dataStore) {
+async function getImages() {
+  const client = createClient();
   try {
-    await kv.set('eratronics_data', dataStore);
-  } catch (error) {
-    console.error('Error saving data to KV:', error);
+    await client.connect();
+    const result = await client.query('SELECT * FROM images ORDER BY created_at');
+    return result.rows;
+  } finally {
+    await client.end();
+  }
+}
+
+async function getClicks() {
+  const client = createClient();
+  try {
+    await client.connect();
+    const result = await client.query('SELECT * FROM clicks ORDER BY clicked_at');
+    return result.rows;
+  } finally {
+    await client.end();
   }
 }
 
@@ -110,58 +57,72 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Load data from KV storage
-  let dataStore = await loadData();
-
   function verifyPassword(password, hash) {
     return hashPassword(password) === hash;
   }
 
-  function getStatistics() {
-    const nonAdminUsers = dataStore.users.filter(u => u.user_type !== 'admin');
-    
-    // Group clicks by user and image
-    const clickGroups = {};
-    dataStore.clicks.forEach(click => {
-      const user = dataStore.users.find(u => u.id === click.user_id);
-      const image = dataStore.images.find(i => i.id === click.image_id);
+  async function getStatistics() {
+    const client = createClient();
+    try {
+      await client.connect();
       
-      if (user && image && user.user_type !== 'admin') {
-        const key = `${user.id}-${image.id}`;
-        if (!clickGroups[key]) {
-          clickGroups[key] = {
-            username: user.username,
-            user_type: user.user_type,
-            image_name: image.name,
-            category: image.category,
-            click_count: 0,
-            last_clicked: click.clicked_at
-          };
-        }
-        clickGroups[key].click_count++;
-        if (click.clicked_at > clickGroups[key].last_clicked) {
-          clickGroups[key].last_clicked = click.clicked_at;
-        }
-      }
-    });
+      // Get non-admin users count
+      const usersResult = await client.query(
+        'SELECT COUNT(*) as count FROM users WHERE user_type != $1',
+        ['admin']
+      );
+      const totalUsers = parseInt(usersResult.rows[0].count);
 
-    const stats = Object.values(clickGroups).sort((a, b) => (a.username + b.image_name).localeCompare(b.username + a.image_name));
-    
-    const summary = {
-      total_users: nonAdminUsers.length,
-      total_clicks: dataStore.clicks.filter(c => {
-        const user = dataStore.users.find(u => u.id === c.user_id);
-        return user && user.user_type !== 'admin';
-      }).length,
-      total_images: dataStore.images.length,
-      avg_clicks_per_user: nonAdminUsers.length > 0 ? 
-        dataStore.clicks.filter(c => {
-          const user = dataStore.users.find(u => u.id === c.user_id);
-          return user && user.user_type !== 'admin';
-        }).length / nonAdminUsers.length : 0
-    };
+      // Get total clicks count for non-admin users
+      const clicksResult = await client.query(`
+        SELECT COUNT(*) as count 
+        FROM clicks c 
+        JOIN users u ON c.user_id = u.id 
+        WHERE u.user_type != $1
+      `, ['admin']);
+      const totalClicks = parseInt(clicksResult.rows[0].count);
 
-    return { stats, summary };
+      // Get total images count
+      const imagesResult = await client.query('SELECT COUNT(*) as count FROM images');
+      const totalImages = parseInt(imagesResult.rows[0].count);
+
+      // Get detailed click statistics
+      const statsResult = await client.query(`
+        SELECT 
+          u.username,
+          u.user_type,
+          i.name as image_name,
+          i.category,
+          COUNT(c.id) as click_count,
+          MAX(c.clicked_at) as last_clicked
+        FROM clicks c
+        JOIN users u ON c.user_id = u.id
+        JOIN images i ON c.image_id = i.id
+        WHERE u.user_type != $1
+        GROUP BY u.id, u.username, u.user_type, i.id, i.name, i.category
+        ORDER BY u.username, i.name
+      `, ['admin']);
+
+      const stats = statsResult.rows.map(row => ({
+        username: row.username,
+        user_type: row.user_type,
+        image_name: row.image_name,
+        category: row.category,
+        click_count: parseInt(row.click_count),
+        last_clicked: row.last_clicked
+      }));
+
+      const summary = {
+        total_users: totalUsers,
+        total_clicks: totalClicks,
+        total_images: totalImages,
+        avg_clicks_per_user: totalUsers > 0 ? totalClicks / totalUsers : 0
+      };
+
+      return { stats, summary };
+    } finally {
+      await client.end();
+    }
   }
 
   const { method } = req;
@@ -172,18 +133,27 @@ export default async function handler(req, res) {
     switch (method) {
       case 'GET':
         if (path === '/users') {
-          res.status(200).json(dataStore.users);
+          const users = await getUsers();
+          res.status(200).json(users);
         } else if (path === '/images') {
-          res.status(200).json(dataStore.images);
+          const images = await getImages();
+          res.status(200).json(images);
         } else if (path === '/clicks') {
-          res.status(200).json(dataStore.clicks);
+          const clicks = await getClicks();
+          res.status(200).json(clicks);
         } else if (path === '/stats') {
-          res.status(200).json(getStatistics());
+          const stats = await getStatistics();
+          res.status(200).json(stats);
         } else {
+          const [users, images, clicks] = await Promise.all([
+            getUsers(),
+            getImages(),
+            getClicks()
+          ]);
           res.status(200).json({
-            users: dataStore.users,
-            images: dataStore.images,
-            clicks: dataStore.clicks
+            users,
+            images,
+            clicks
           });
         }
         break;
@@ -193,103 +163,139 @@ export default async function handler(req, res) {
         
         if (path === '/login') {
           const { username, password } = body;
-          const user = dataStore.users.find(u => u.username === username);
+          const client = createClient();
           
-          if (user && verifyPassword(password, user.password)) {
-            res.status(200).json({
-              success: true,
-              user: {
-                id: user.id,
-                username: user.username,
-                user_type: user.user_type
+          try {
+            await client.connect();
+            const result = await client.query(
+              'SELECT * FROM users WHERE username = $1',
+              [username]
+            );
+            
+            if (result.rows.length > 0) {
+              const user = result.rows[0];
+              if (verifyPassword(password, user.password_hash)) {
+                res.status(200).json({
+                  success: true,
+                  user: {
+                    id: user.id,
+                    username: user.username,
+                    user_type: user.user_type
+                  }
+                });
+              } else {
+                res.status(401).json({ success: false, message: 'Invalid credentials' });
               }
-            });
-          } else {
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
+            } else {
+              res.status(401).json({ success: false, message: 'Invalid credentials' });
+            }
+          } finally {
+            await client.end();
           }
         } else if (path === '/users') {
           const { username, password, user_type } = body;
+          const client = createClient();
           
-          if (dataStore.users.find(u => u.username === username)) {
-            res.status(400).json({ success: false, message: 'Username already exists' });
-            return;
+          try {
+            await client.connect();
+            
+            // Check if username already exists
+            const existingUser = await client.query(
+              'SELECT id FROM users WHERE username = $1',
+              [username]
+            );
+            
+            if (existingUser.rows.length > 0) {
+              res.status(400).json({ success: false, message: 'Username already exists' });
+              return;
+            }
+
+            const result = await client.query(
+              'INSERT INTO users (username, password_hash, user_type) VALUES ($1, $2, $3) RETURNING *',
+              [username, hashPassword(password), user_type]
+            );
+
+            const newUser = result.rows[0];
+            res.status(201).json({ success: true, user: newUser });
+          } finally {
+            await client.end();
           }
-
-          const newUser = {
-            id: dataStore.nextUserId++,
-            username,
-            password: hashPassword(password),
-            user_type,
-            created_at: new Date().toISOString()
-          };
-
-           dataStore.users.push(newUser);
-           await saveData(dataStore);
-           res.status(201).json({ success: true, user: newUser });
         } else if (path === '/images') {
           const { name, category, filename, imageData } = body;
+          const client = createClient();
           
-          const newImage = {
-            id: dataStore.nextImageId++,
-            name,
-            filename,
-            category,
-            imageData,
-            created_at: new Date().toISOString()
-          };
+          try {
+            await client.connect();
+            const result = await client.query(
+              'INSERT INTO images (name, filename, category, image_data) VALUES ($1, $2, $3, $4) RETURNING *',
+              [name, filename, category, imageData]
+            );
 
-           dataStore.images.push(newImage);
-           await saveData(dataStore);
-           res.status(201).json({ success: true, image: newImage });
+            const newImage = result.rows[0];
+            res.status(201).json({ success: true, image: newImage });
+          } finally {
+            await client.end();
+          }
         } else if (path === '/clicks') {
           const { user_id, image_id } = body;
+          const client = createClient();
           
-          const newClick = {
-            id: dataStore.nextClickId++,
-            user_id,
-            image_id,
-            clicked_at: new Date().toISOString()
-          };
+          try {
+            await client.connect();
+            const result = await client.query(
+              'INSERT INTO clicks (user_id, image_id) VALUES ($1, $2) RETURNING *',
+              [user_id, image_id]
+            );
 
-           dataStore.clicks.push(newClick);
-           await saveData(dataStore);
-           res.status(201).json({ success: true, click: newClick });
+            const newClick = result.rows[0];
+            res.status(201).json({ success: true, click: newClick });
+          } finally {
+            await client.end();
+          }
         } else if (path === '/users/bulk') {
           const { users } = body;
-          let successCount = 0;
-          const errors = [];
+          const client = createClient();
+          
+          try {
+            await client.connect();
+            let successCount = 0;
+            const errors = [];
 
-          users.forEach((userData, index) => {
-            try {
-              const { username, password, user_type } = userData;
-              
-              if (dataStore.users.find(u => u.username === username)) {
-                errors.push(`Row ${index + 1}: Username '${username}' already exists`);
-                return;
+            for (let i = 0; i < users.length; i++) {
+              try {
+                const { username, password, user_type } = users[i];
+                
+                // Check if username already exists
+                const existingUser = await client.query(
+                  'SELECT id FROM users WHERE username = $1',
+                  [username]
+                );
+                
+                if (existingUser.rows.length > 0) {
+                  errors.push(`Row ${i + 1}: Username '${username}' already exists`);
+                  continue;
+                }
+
+                await client.query(
+                  'INSERT INTO users (username, password_hash, user_type) VALUES ($1, $2, $3)',
+                  [username, hashPassword(password), user_type]
+                );
+                
+                successCount++;
+              } catch (error) {
+                errors.push(`Row ${i + 1}: ${error.message}`);
               }
+            }
 
-              const newUser = {
-                id: dataStore.nextUserId++,
-                username,
-                password: hashPassword(password),
-                user_type,
-                created_at: new Date().toISOString()
-              };
-
-               dataStore.users.push(newUser);
-               successCount++;
-             } catch (error) {
-               errors.push(`Row ${index + 1}: ${error.message}`);
-             }
-           });
-
-           await saveData(dataStore);
-           res.status(200).json({
-            success: true, 
-            successCount, 
-            errorCount: errors.length,
-            errors 
-          });
+            res.status(200).json({
+              success: true, 
+              successCount, 
+              errorCount: errors.length,
+              errors 
+            });
+          } finally {
+            await client.end();
+          }
         } else {
           res.status(404).json({ success: false, message: 'Endpoint not found' });
         }
@@ -298,30 +304,52 @@ export default async function handler(req, res) {
       case 'DELETE':
         if (path.startsWith('/users/')) {
           const userId = parseInt(path.split('/')[2]);
-          const userIndex = dataStore.users.findIndex(u => u.id === userId);
+          const client = createClient();
           
-          if (userIndex === -1) {
-            res.status(404).json({ success: false, message: 'User not found' });
-            return;
-          }
+          try {
+            await client.connect();
+            
+            // Check if user exists
+            const userResult = await client.query(
+              'SELECT id FROM users WHERE id = $1',
+              [userId]
+            );
+            
+            if (userResult.rows.length === 0) {
+              res.status(404).json({ success: false, message: 'User not found' });
+              return;
+            }
 
-           dataStore.users.splice(userIndex, 1);
-           dataStore.clicks = dataStore.clicks.filter(c => c.user_id !== userId);
-           await saveData(dataStore);
-           res.status(200).json({ success: true });
+            // Delete user (cascade will handle clicks)
+            await client.query('DELETE FROM users WHERE id = $1', [userId]);
+            res.status(200).json({ success: true });
+          } finally {
+            await client.end();
+          }
         } else if (path.startsWith('/images/')) {
           const imageId = parseInt(path.split('/')[2]);
-          const imageIndex = dataStore.images.findIndex(i => i.id === imageId);
+          const client = createClient();
           
-          if (imageIndex === -1) {
-            res.status(404).json({ success: false, message: 'Image not found' });
-            return;
-          }
+          try {
+            await client.connect();
+            
+            // Check if image exists
+            const imageResult = await client.query(
+              'SELECT id FROM images WHERE id = $1',
+              [imageId]
+            );
+            
+            if (imageResult.rows.length === 0) {
+              res.status(404).json({ success: false, message: 'Image not found' });
+              return;
+            }
 
-           dataStore.images.splice(imageIndex, 1);
-           dataStore.clicks = dataStore.clicks.filter(c => c.image_id !== imageId);
-           await saveData(dataStore);
-           res.status(200).json({ success: true });
+            // Delete image (cascade will handle clicks)
+            await client.query('DELETE FROM images WHERE id = $1', [imageId]);
+            res.status(200).json({ success: true });
+          } finally {
+            await client.end();
+          }
         } else {
           res.status(404).json({ success: false, message: 'Endpoint not found' });
         }
