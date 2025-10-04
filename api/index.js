@@ -27,9 +27,12 @@ module.exports = async function handler(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const path = url.pathname;
 
+  // Debug logging
+  console.log('API Request:', { method, path, url: req.url });
+
   try {
     // Route handling
-    if (path === '/api/test-neon') {
+    if (path === '/api/test-neon' || path === '/test-neon') {
       // Test database connection
       const client = createClient();
       try {
@@ -62,7 +65,7 @@ module.exports = async function handler(req, res) {
       } finally {
         await client.end();
       }
-    } else if (path === '/api/init-db' && method === 'POST') {
+    } else if ((path === '/api/init-db' || path === '/init-db') && method === 'POST') {
       // Initialize database
       const client = createClient();
       try {
@@ -179,7 +182,7 @@ module.exports = async function handler(req, res) {
           error: error.message
         });
       }
-    } else if (path === '/api/login' && method === 'POST') {
+    } else if ((path === '/api/login' || path === '/login') && method === 'POST') {
       // Login endpoint
       const { username, password } = req.body;
       const client = createClient();
@@ -211,7 +214,7 @@ module.exports = async function handler(req, res) {
       } finally {
         await client.end();
       }
-    } else if (path === '/api/data' || path === '/api') {
+    } else if (path === '/api/data' || path === '/api' || path === '/data') {
       // Main data endpoint
       if (method === 'GET') {
         const client = createClient();
