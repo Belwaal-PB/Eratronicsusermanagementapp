@@ -74,18 +74,20 @@ class EratronicsApp {
 
     async login(username, password) {
         try {
-            const response = await fetch(`${this.apiBase}/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password })
-            });
-
+            // Load users data from the working API endpoint
+            const response = await fetch(`${this.apiBase}/data`);
             if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    this.currentUser = result.user;
+                const data = await response.json();
+                const users = data.users || [];
+                
+                // Find user by username
+                const user = users.find(u => u.username === username);
+                if (user && this.verifyPassword(password, user.password_hash)) {
+                    this.currentUser = {
+                        id: user.id,
+                        username: user.username,
+                        user_type: user.user_type
+                    };
                     await this.saveData();
                     return true;
                 }
