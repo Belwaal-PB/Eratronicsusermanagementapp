@@ -1,4 +1,4 @@
-// Unified API handler for all endpoints
+// Single API file for Vercel deployment
 const { createClient } = require('@vercel/postgres');
 
 // Hash password function
@@ -10,40 +10,6 @@ function hashPassword(password) {
     hash = hash & hash;
   }
   return hash.toString();
-}
-
-// Database helper functions
-async function getUsers() {
-  const client = createClient();
-  try {
-    await client.connect();
-    const result = await client.query('SELECT * FROM users ORDER BY created_at');
-    return result.rows;
-  } finally {
-    await client.end();
-  }
-}
-
-async function getImages() {
-  const client = createClient();
-  try {
-    await client.connect();
-    const result = await client.query('SELECT * FROM images ORDER BY created_at');
-    return result.rows;
-  } finally {
-    await client.end();
-  }
-}
-
-async function getClicks() {
-  const client = createClient();
-  try {
-    await client.connect();
-    const result = await client.query('SELECT * FROM clicks ORDER BY clicked_at');
-    return result.rows;
-  } finally {
-    await client.end();
-  }
 }
 
 module.exports = async function handler(req, res) {
@@ -216,20 +182,26 @@ module.exports = async function handler(req, res) {
     } else if (path === '/api/data' || path === '/api') {
       // Main data endpoint
       if (method === 'GET') {
-        const [users, images, clicks] = await Promise.all([
-          getUsers(),
-          getImages(),
-          getClicks()
-        ]);
-        res.status(200).json({ users, images, clicks });
+        const client = createClient();
+        try {
+          await client.connect();
+          const [users, images, clicks] = await Promise.all([
+            client.query('SELECT * FROM users ORDER BY created_at').then(r => r.rows),
+            client.query('SELECT * FROM images ORDER BY created_at').then(r => r.rows),
+            client.query('SELECT * FROM clicks ORDER BY clicked_at').then(r => r.rows)
+          ]);
+          res.status(200).json({ users, images, clicks });
+        } finally {
+          await client.end();
+        }
       } else {
         res.status(405).json({ success: false, message: 'Method not allowed' });
       }
     } else {
-      res.status(404).json({ success: false, message: 'Endpoint not found' });
+      res.status(404).json({ success: false, message: 'Endpoint not found', path: path });
     }
   } catch (error) {
     console.error('API Error:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
   }
 };
