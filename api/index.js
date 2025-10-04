@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
   const path = url.pathname;
 
   // Debug logging
-  console.log('API Request:', { method, path, url: req.url });
+  console.log('API Request:', { method, path, url: req.url, headers: req.headers });
 
   try {
     // Route handling
@@ -379,7 +379,9 @@ module.exports = async function handler(req, res) {
         res.status(405).json({ success: false, message: 'Method not allowed' });
       }
     } else {
-      res.status(404).json({ success: false, message: 'Endpoint not found', path: path });
+      // Debug: Log all unmatched requests
+      console.log('Unmatched request:', { method, path, url: req.url });
+      res.status(404).json({ success: false, message: 'Endpoint not found', path: path, method: method, url: req.url });
     }
   } catch (error) {
     console.error('API Error:', error);
