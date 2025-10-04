@@ -1,4 +1,6 @@
 {
+  "buildCommand": "echo 'No build step required'",
+  "outputDirectory": ".",
   "rewrites": [
     {
       "source": "/((?!static/|api/).*)",
