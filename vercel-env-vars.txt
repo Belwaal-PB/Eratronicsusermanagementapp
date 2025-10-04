@@ -1,0 +1,15 @@
+# Environment Variables for Vercel Deployment
+# Copy these to your Vercel dashboard under Settings → Environment Variables
+
+# Neon Database Configuration
+POSTGRES_URL=postgresql://neondb_owner:npg_WQs9mX5AMNhz@ep-green-cherry-adrgm3qy-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+POSTGRES_USER=neondb_owner
+POSTGRES_PASSWORD=npg_WQs9mX5AMNhz
+POSTGRES_DATABASE=neondb
+POSTGRES_HOST=ep-green-cherry-adrgm3qy-pooler.c-2.us-east-1.aws.neon.tech
+
+# Alternative database URL (optional)
+DATABASE_URL=postgresql://neondb_owner:npg_WQs9mX5AMNhz@ep-green-cherry-adrgm3qy-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+# Non-pooling connection (optional)
+POSTGRES_URL_NON_POOLING=postgresql://neondb_owner:npg_WQs9mX5AMNhz@ep-green-cherry-adrgm3qy.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require

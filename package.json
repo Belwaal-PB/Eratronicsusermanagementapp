@@ -1,0 +1,30 @@
+{
+  "name": "eratronics-selectit",
+  "version": "1.0.0",
+  "description": "Eratronics Selectit - A modern user management system with image selection capabilities",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "echo 'Static site - serve index.html'",
+    "build": "echo 'No build step required'"
+  },
+  "keywords": [
+    "user-management",
+    "image-gallery",
+    "admin-dashboard",
+    "javascript",
+    "bootstrap"
+  ],
+  "author": "Eratronics",
+  "license": "MIT",
+  "dependencies": {
+    "@vercel/node": "^3.0.0",
+    "@vercel/postgres": "^0.8.0"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
