@@ -504,10 +504,10 @@ class EratronicsApp {
                                 </span>
                             </div>
                             <div class="image-preview position-relative">
-                                <img src="static/thumbnails/${image.filename}" 
+                                <img src="${image.image_data || 'static/thumbnails/' + image.filename}" 
                                      alt="${image.name}" 
                                      class="clickable-image w-100"
-                                     data-full-image="static/uploads/${image.filename}"
+                                     data-full-image="${image.image_data || 'static/uploads/' + image.filename}"
                                      data-image-name="${image.name}"
                                      data-image-category="${image.category}"
                                      onclick="app.openImagePreview(this)"
@@ -620,8 +620,8 @@ class EratronicsApp {
         modal.show();
     }
 
-    openImagePreviewFromAdmin(filename, imageName, imageCategory) {
-        const fullImageSrc = `static/uploads/${filename}`;
+    openImagePreviewFromAdmin(filename, imageName, imageCategory, imageData) {
+        const fullImageSrc = imageData || `static/uploads/${filename}`;
         
         document.getElementById('previewImage').src = fullImageSrc;
         document.getElementById('previewImageName').textContent = imageName;
@@ -754,7 +754,7 @@ class EratronicsApp {
                                         <td>
                                             <div class="d-flex gap-1">
                                                 <button class="btn btn-outline-primary btn-sm" 
-                                                        onclick="app.openImagePreviewFromAdmin('${image.filename}', '${image.name}', '${image.category}')">
+                                                        onclick="app.openImagePreviewFromAdmin('${image.filename}', '${image.name}', '${image.category}', '${image.image_data || ''}')">
                                                     <i class="bi bi-eye me-1"></i>Preview
                                                 </button>
                                                 <button class="btn btn-outline-danger btn-sm" onclick="app.deleteImage(${image.id})">

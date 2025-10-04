@@ -326,12 +326,12 @@
             }
             
             const firstImage = currentData.images[0];
-            const imageUrl = `static/thumbnails/${firstImage.filename}`;
+            const imageUrl = firstImage.image_data || `static/thumbnails/${firstImage.filename}`;
             
             // Test if image exists
             const img = new Image();
             img.onload = function() {
-                showResult('previewStatus', `✅ Image preview test passed!<br>Image: ${firstImage.name}<br>URL: ${imageUrl}`, 'success');
+                showResult('previewStatus', `✅ Image preview test passed!<br>Image: ${firstImage.name}<br>Source: ${firstImage.image_data ? 'Database (base64)' : 'Static file'}`, 'success');
             };
             img.onerror = function() {
                 showResult('previewStatus', `❌ Preview failed!<br>Image not found: ${imageUrl}`, 'error');
