@@ -696,7 +696,9 @@ class EratronicsApp {
                                         <td class="text-muted">${new Date(user.created_at).toLocaleDateString()}</td>
                                         <td>
                                             ${user.user_type === 'admin' ? 
-                                                '<span class="text-muted"><i class="bi bi-shield-lock me-1"></i>Protected</span>' :
+                                                `<button class="btn btn-outline-danger btn-sm" onclick="app.deleteAdminUser(${user.id}, '${user.username}')">
+                                                    <i class="bi bi-trash me-1"></i>Delete Admin
+                                                </button>` :
                                                 `<button class="btn btn-outline-danger btn-sm" onclick="app.deleteUser(${user.id})">
                                                     <i class="bi bi-trash me-1"></i>Delete
                                                 </button>`
@@ -956,6 +958,68 @@ class EratronicsApp {
                 console.error('Delete user error:', error);
                 this.showAlert('Error deleting user. Please try again.', 'danger');
             }
+        }
+    }
+
+    async deleteAdminUser(userId, username) {
+        // Prevent self-deletion
+        if (userId === this.currentUser.id) {
+            this.showAlert('You cannot delete your own account.', 'danger');
+            return;
+        }
+
+        // Check if this is the last admin user
+        const adminUsers = this.users.filter(u => u.user_type === 'admin');
+        if (adminUsers.length <= 1) {
+            this.showAlert('Cannot delete the last admin user. At least one admin must remain.', 'danger');
+            return;
+        }
+
+        // Enhanced confirmation for admin deletion
+        const confirmMessage = `⚠️ WARNING: You are about to delete an ADMIN user!\n\n` +
+                              `Admin: ${username}\n` +
+                              `This action cannot be undone.\n\n` +
+                              `Are you absolutely sure you want to delete this admin user?`;
+        
+        if (confirm(confirmMessage)) {
+            // Double confirmation for admin deletion
+            const doubleConfirm = confirm(`FINAL CONFIRMATION:\n\nDelete admin user "${username}"?\n\nType "DELETE" in the next prompt to confirm.`);
+            
+            if (doubleConfirm) {
+                const finalConfirm = prompt(`Type "DELETE" to confirm deletion of admin user "${username}":`);
+                
+                if (finalConfirm === 'DELETE') {
+                    try {
+                        const response = await fetch(`${this.apiBase}/users/${userId}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.success) {
+                                this.users = this.users.filter(u => u.id !== userId);
+                                this.clicks = this.clicks.filter(c => c.user_id !== userId);
+                                this.showAlert(`Admin user "${username}" deleted successfully!`, 'success');
+                                this.showAdminSection('users');
+                            } else {
+                                this.showAlert(result.message || 'Failed to delete admin user', 'danger');
+                            }
+                        } else {
+                            const error = await response.json();
+                            this.showAlert(error.message || 'Failed to delete admin user', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Delete admin user error:', error);
+                        this.showAlert('Error deleting admin user. Please try again.', 'danger');
+                    }
+                } else {
+                    this.showAlert('Admin deletion cancelled. You must type "DELETE" to confirm.', 'info');
+                }
+            } else {
+                this.showAlert('Admin deletion cancelled.', 'info');
+            }
+        } else {
+            this.showAlert('Admin deletion cancelled.', 'info');
         }
     }
 
