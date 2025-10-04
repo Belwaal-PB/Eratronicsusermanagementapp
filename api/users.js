@@ -73,6 +73,48 @@ module.exports = async function handler(req, res) {
       } finally {
         await client.end();
       }
+    } else if (path === '/api/users/bulk' && method === 'POST') {
+      // Bulk add users endpoint
+      const { users } = await parseBody(req);
+      const client = createClient();
+      
+      try {
+        await client.connect();
+        let successCount = 0;
+        const errors = [];
+
+        for (let i = 0; i < users.length; i++) {
+          try {
+            const { username, password, user_type } = users[i];
+            
+            // Check if username already exists
+            const existingUser = await client.query('SELECT id FROM users WHERE username = $1', [username]);
+            
+            if (existingUser.rows.length > 0) {
+              errors.push(`Row ${i + 1}: Username '${username}' already exists`);
+              continue;
+            }
+
+            await client.query(
+              'INSERT INTO users (username, password_hash, user_type) VALUES ($1, $2, $3)',
+              [username, hashPassword(password), user_type]
+            );
+            
+            successCount++;
+          } catch (error) {
+            errors.push(`Row ${i + 1}: ${error.message}`);
+          }
+        }
+
+        res.status(200).json({
+          success: true, 
+          successCount, 
+          errorCount: errors.length,
+          errors 
+        });
+      } finally {
+        await client.end();
+      }
     } else if (path.startsWith('/api/users/') && method === 'DELETE') {
       // Delete user endpoint
       const userId = parseInt(path.split('/')[3]);

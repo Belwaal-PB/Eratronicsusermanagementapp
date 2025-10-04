@@ -1100,6 +1100,7 @@ class EratronicsApp {
     }
 
     async uploadExcel() {
+        console.log('uploadExcel function called');
         const fileInput = document.getElementById('excelFile');
         const file = fileInput.files[0];
         
@@ -1108,14 +1109,19 @@ class EratronicsApp {
             return;
         }
 
+        console.log('File selected:', file.name, file.type, file.size);
+
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
+                console.log('File read successfully, processing...');
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                console.log('Excel data parsed:', jsonData.length, 'rows');
 
                 if (jsonData.length === 0) {
                     this.showAlert('No data found in Excel file', 'warning');
@@ -1157,6 +1163,8 @@ class EratronicsApp {
                     }
                 });
 
+                console.log('Processed users:', users.length, 'errors:', errors.length);
+
                 if (errors.length > 0) {
                     const errorMsg = errors.slice(0, 5).join('; ');
                     const moreErrors = errors.length > 5 ? ` ... and ${errors.length - 5} more errors` : '';
@@ -1165,6 +1173,7 @@ class EratronicsApp {
                 }
 
                 // Send to API
+                console.log('Sending to API:', `${this.apiBase}/users/bulk`);
                 const response = await fetch(`${this.apiBase}/users/bulk`, {
                     method: 'POST',
                     headers: {
@@ -1173,8 +1182,11 @@ class EratronicsApp {
                     body: JSON.stringify({ users })
                 });
 
+                console.log('API response status:', response.status);
+
                 if (response.ok) {
                     const result = await response.json();
+                    console.log('API response:', result);
                     if (result.success) {
                         // Reload data to get updated user list
                         await this.loadData();
@@ -1197,6 +1209,7 @@ class EratronicsApp {
                     }
                 } else {
                     const error = await response.json();
+                    console.error('API error:', error);
                     this.showAlert(error.message || 'Failed to upload Excel file', 'danger');
                 }
 
