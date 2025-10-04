@@ -636,7 +636,12 @@ class EratronicsApp {
 
     // Admin Functions
     renderAdminUsers() {
-        const users = this.users.filter(u => u.user_type !== 'admin').sort((a, b) => a.username.localeCompare(b.username));
+        const users = this.users.sort((a, b) => {
+            // Sort admin users first, then by username
+            if (a.user_type === 'admin' && b.user_type !== 'admin') return -1;
+            if (a.user_type !== 'admin' && b.user_type === 'admin') return 1;
+            return a.username.localeCompare(b.username);
+        });
         
         return `
             <div class="card fade-in">
@@ -645,7 +650,7 @@ class EratronicsApp {
                         <div class="d-flex align-items-center">
                             <i class="bi bi-people text-primary me-2"></i>
                             <h5 class="mb-0">User Management</h5>
-                            <span class="badge bg-secondary ms-2">${users.length} users</span>
+                            <span class="badge bg-secondary ms-2">${users.length} users (${users.filter(u => u.user_type === 'admin').length} admin)</span>
                         </div>
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
@@ -678,18 +683,24 @@ class EratronicsApp {
                             </thead>
                             <tbody>
                                 ${users.map(user => `
-                                    <tr>
-                                        <td class="fw-semibold">${user.username}</td>
+                                    <tr class="${user.user_type === 'admin' ? 'table-warning' : ''}">
+                                        <td class="fw-semibold">
+                                            ${user.username}
+                                            ${user.user_type === 'admin' ? '<i class="bi bi-shield-fill text-danger ms-1" title="Admin User"></i>' : ''}
+                                        </td>
                                         <td>
-                                            <span class="badge ${this.getCategoryBadgeClass(user.user_type)} fs-6">
+                                            <span class="badge ${user.user_type === 'admin' ? 'bg-danger' : this.getCategoryBadgeClass(user.user_type)} fs-6">
                                                 ${user.user_type.toUpperCase()}
                                             </span>
                                         </td>
                                         <td class="text-muted">${new Date(user.created_at).toLocaleDateString()}</td>
                                         <td>
-                                            <button class="btn btn-outline-danger btn-sm" onclick="app.deleteUser(${user.id})">
-                                                <i class="bi bi-trash me-1"></i>Delete
-                                            </button>
+                                            ${user.user_type === 'admin' ? 
+                                                '<span class="text-muted"><i class="bi bi-shield-lock me-1"></i>Protected</span>' :
+                                                `<button class="btn btn-outline-danger btn-sm" onclick="app.deleteUser(${user.id})">
+                                                    <i class="bi bi-trash me-1"></i>Delete
+                                                </button>`
+                                            }
                                         </td>
                                     </tr>
                                 `).join('')}
