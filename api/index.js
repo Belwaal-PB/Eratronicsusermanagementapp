@@ -179,6 +179,38 @@ module.exports = async function handler(req, res) {
           error: error.message
         });
       }
+    } else if (path === '/api/login' && method === 'POST') {
+      // Login endpoint
+      const { username, password } = req.body;
+      const client = createClient();
+      
+      try {
+        await client.connect();
+        const result = await client.query(
+          'SELECT * FROM users WHERE username = $1',
+          [username]
+        );
+        
+        if (result.rows.length > 0) {
+          const user = result.rows[0];
+          if (hashPassword(password) === user.password_hash) {
+            res.status(200).json({
+              success: true,
+              user: {
+                id: user.id,
+                username: user.username,
+                user_type: user.user_type
+              }
+            });
+          } else {
+            res.status(401).json({ success: false, message: 'Invalid credentials' });
+          }
+        } else {
+          res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+      } finally {
+        await client.end();
+      }
     } else if (path === '/api/data' || path === '/api') {
       // Main data endpoint
       if (method === 'GET') {
