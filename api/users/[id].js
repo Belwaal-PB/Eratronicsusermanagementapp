@@ -17,7 +17,60 @@ module.exports = async function handler(req, res) {
   console.log('Users [id] API Request:', { method, id, url: req.url });
 
   try {
-    if (method === 'DELETE') {
+    if (id === 'bulk' && method === 'POST') {
+      // Bulk add users endpoint
+      const { users } = req.body;
+      const client = createClient();
+      
+      try {
+        await client.connect();
+        let successCount = 0;
+        const errors = [];
+
+        for (let i = 0; i < users.length; i++) {
+          try {
+            const { username, password, user_type } = users[i];
+            
+            // Check if username already exists
+            const existingUser = await client.query('SELECT id FROM users WHERE username = $1', [username]);
+            
+            if (existingUser.rows.length > 0) {
+              errors.push(`Row ${i + 1}: Username '${username}' already exists`);
+              continue;
+            }
+
+            // Hash password function
+            function hashPassword(password) {
+              let hash = 0;
+              for (let i = 0; i < password.length; i++) {
+                const char = password.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+              }
+              return hash.toString();
+            }
+
+            await client.query(
+              'INSERT INTO users (username, password_hash, user_type) VALUES ($1, $2, $3)',
+              [username, hashPassword(password), user_type]
+            );
+            
+            successCount++;
+          } catch (error) {
+            errors.push(`Row ${i + 1}: ${error.message}`);
+          }
+        }
+
+        res.status(200).json({
+          success: true, 
+          successCount, 
+          errorCount: errors.length,
+          errors 
+        });
+      } finally {
+        await client.end();
+      }
+    } else if (method === 'DELETE') {
       // Delete user endpoint
       const userId = parseInt(id);
       const client = createClient();

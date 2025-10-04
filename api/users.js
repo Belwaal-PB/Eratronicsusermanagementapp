@@ -47,33 +47,7 @@ module.exports = async function handler(req, res) {
   console.log('Users API Request:', { method, path, url: req.url });
 
   try {
-    if (path === '/api/users' && method === 'POST') {
-      // Add user endpoint
-      const { username, password, user_type } = await parseBody(req);
-      const client = createClient();
-      
-      try {
-        await client.connect();
-        
-        // Check if username already exists
-        const existingUser = await client.query('SELECT id FROM users WHERE username = $1', [username]);
-        
-        if (existingUser.rows.length > 0) {
-          res.status(400).json({ success: false, message: 'Username already exists' });
-          return;
-        }
-
-        const result = await client.query(
-          'INSERT INTO users (username, password_hash, user_type) VALUES ($1, $2, $3) RETURNING *',
-          [username, hashPassword(password), user_type]
-        );
-
-        const newUser = result.rows[0];
-        res.status(201).json({ success: true, user: newUser });
-      } finally {
-        await client.end();
-      }
-    } else if (path === '/api/users/bulk' && method === 'POST') {
+    if (path === '/api/users/bulk' && method === 'POST') {
       // Bulk add users endpoint
       const { users } = await parseBody(req);
       const client = createClient();
@@ -112,6 +86,32 @@ module.exports = async function handler(req, res) {
           errorCount: errors.length,
           errors 
         });
+      } finally {
+        await client.end();
+      }
+    } else if (path === '/api/users' && method === 'POST') {
+      // Add user endpoint
+      const { username, password, user_type } = await parseBody(req);
+      const client = createClient();
+      
+      try {
+        await client.connect();
+        
+        // Check if username already exists
+        const existingUser = await client.query('SELECT id FROM users WHERE username = $1', [username]);
+        
+        if (existingUser.rows.length > 0) {
+          res.status(400).json({ success: false, message: 'Username already exists' });
+          return;
+        }
+
+        const result = await client.query(
+          'INSERT INTO users (username, password_hash, user_type) VALUES ($1, $2, $3) RETURNING *',
+          [username, hashPassword(password), user_type]
+        );
+
+        const newUser = result.rows[0];
+        res.status(201).json({ success: true, user: newUser });
       } finally {
         await client.end();
       }
