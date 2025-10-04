@@ -5,8 +5,12 @@
   "main": "index.html",
   "scripts": {
     "dev": "vercel dev",
+<<<<<<< HEAD
     "start": "echo 'Static site - serve index.html'",
     "build": "echo 'No build step required'"
+=======
+    "start": "echo 'Static site - serve index.html'"
+>>>>>>> 3a09f694d739ae3c8dc7d0408feb672b03f8dc05
   },
   "keywords": [
     "user-management",
@@ -19,12 +23,20 @@
   "license": "MIT",
   "dependencies": {
     "@vercel/node": "^3.0.0",
+<<<<<<< HEAD
+=======
+    "@vercel/kv": "^1.0.0",
+>>>>>>> 3a09f694d739ae3c8dc7d0408feb672b03f8dc05
     "@vercel/postgres": "^0.8.0"
   },
   "devDependencies": {
     "vercel": "^32.0.0"
   },
   "engines": {
+<<<<<<< HEAD
     "node": ">=18.0.0"
+=======
+    "node": ">=14.0.0"
+>>>>>>> 3a09f694d739ae3c8dc7d0408feb672b03f8dc05
   }
 }
