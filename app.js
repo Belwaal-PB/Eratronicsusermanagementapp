@@ -5,7 +5,7 @@ class EratronicsApp {
         this.users = [];
         this.images = [];
         this.clicks = [];
-        this.apiBase = '/api/data';
+        this.apiBase = '/api';
         
         this.init();
     }
@@ -26,7 +26,7 @@ class EratronicsApp {
             }
 
             // Load all data from API
-            const response = await fetch(this.apiBase);
+            const response = await fetch(`${this.apiBase}/data`);
             if (response.ok) {
                 const data = await response.json();
                 this.users = data.users || [];
