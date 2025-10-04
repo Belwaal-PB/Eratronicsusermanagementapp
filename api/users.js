@@ -11,6 +11,24 @@ function hashPassword(password) {
   return hash.toString();
 }
 
+// Helper function to parse JSON body
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
 module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,7 +49,7 @@ module.exports = async function handler(req, res) {
   try {
     if (path === '/api/users' && method === 'POST') {
       // Add user endpoint
-      const { username, password, user_type } = req.body;
+      const { username, password, user_type } = await parseBody(req);
       const client = createClient();
       
       try {

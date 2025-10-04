@@ -1,5 +1,23 @@
 const { createClient } = require('@vercel/postgres');
 
+// Helper function to parse JSON body
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+    req.on('end', () => {
+      try {
+        resolve(JSON.parse(body));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
 module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -42,7 +60,7 @@ module.exports = async function handler(req, res) {
       }
     } else if (path === '/api/images' && method === 'POST') {
       // Add image endpoint
-      const { name, category, filename, imageData } = req.body;
+      const { name, category, filename, imageData } = await parseBody(req);
       const client = createClient();
       
       try {
