@@ -16,6 +16,22 @@
   ],
   "routes": [
     {
+      "src": "/api/users",
+      "dest": "/api/users.js"
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "/api/users.js"
+    },
+    {
+      "src": "/api/images",
+      "dest": "/api/images.js"
+    },
+    {
+      "src": "/api/images/(.*)",
+      "dest": "/api/images.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/index.js"
     },
