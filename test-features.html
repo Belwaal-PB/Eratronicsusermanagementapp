@@ -233,6 +233,13 @@
                         user_type: 'a'
                     })
                 });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    showResult('userStatus', `❌ HTTP ${response.status}: ${errorText}`, 'error');
+                    return;
+                }
+                
                 const data = await response.json();
                 if (data.success) {
                     showResult('userStatus', `✅ Test user added!<br>Username: ${data.user.username}`, 'success');
@@ -261,6 +268,13 @@
                         imageData: testImageData
                     })
                 });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    showResult('imageStatus', `❌ HTTP ${response.status}: ${errorText}`, 'error');
+                    return;
+                }
+                
                 const data = await response.json();
                 if (data.success) {
                     showResult('imageStatus', `✅ Image upload test passed!<br>Image ID: ${data.image.id}`, 'success');
@@ -285,6 +299,13 @@
                 const response = await fetch(`/api/images/${firstImage.id}`, {
                     method: 'DELETE'
                 });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    showResult('imageStatus', `❌ HTTP ${response.status}: ${errorText}`, 'error');
+                    return;
+                }
+                
                 const data = await response.json();
                 if (data.success) {
                     showResult('imageStatus', `✅ Image delete test passed!<br>Deleted image: ${firstImage.name}`, 'success');
