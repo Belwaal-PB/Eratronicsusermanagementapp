@@ -359,7 +359,15 @@ class EratronicsApp {
     }
 
     async showAdminDashboard() {
-        const stats = await this.fetchStatistics();
+        console.log('Loading admin dashboard...');
+        let stats;
+        try {
+            stats = await this.fetchStatistics();
+            console.log('Statistics loaded successfully:', stats);
+        } catch (error) {
+            console.error('Error loading statistics, using fallback:', error);
+            stats = { stats: [], summary: { total_users: 0, total_clicks: 0, total_images: 0, avg_clicks_per_user: 0 } };
+        }
         
         document.getElementById('mainContent').innerHTML = `
             <div class="row">
@@ -1283,11 +1291,13 @@ class EratronicsApp {
                 console.error('Failed to fetch statistics from API, status:', response.status);
                 const errorText = await response.text();
                 console.error('Statistics error response:', errorText);
-                return { stats: [], summary: { total_users: 0, total_clicks: 0, total_images: 0, avg_clicks_per_user: 0 } };
+                console.log('Falling back to local statistics calculation');
+                return this.getStatistics();
             }
         } catch (error) {
             console.error('Error fetching statistics:', error);
-            return { stats: [], summary: { total_users: 0, total_clicks: 0, total_images: 0, avg_clicks_per_user: 0 } };
+            console.log('Falling back to local statistics calculation');
+            return this.getStatistics();
         }
     }
 
@@ -1468,6 +1478,7 @@ class EratronicsApp {
             `${this.apiBase}/data`,
             `${this.apiBase}/api/data`,
             `${this.apiBase}/api`,
+            `${this.apiBase}/stats`,
             `${this.apiBase}/test-neon`
         ];
         
