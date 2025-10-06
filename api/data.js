@@ -1,5 +1,5 @@
 // Postgres-based API endpoint for data management
-import { createClient } from '@vercel/postgres';
+const { createClient } = require('@vercel/postgres');
 
 // Hash password function
 function hashPassword(password) {
@@ -46,7 +46,7 @@ async function getClicks() {
   }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Users - Eratronics Selectit</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="bi bi-people text-primary me-2"></i>All Users in Database</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <button class="btn btn-primary" onclick="loadAllUsers()">Load All Users</button>
+                            <button class="btn btn-success" onclick="loadNonAdminUsers()">Load Non-Admin Users Only</button>
+                        </div>
+                        <div id="userResults"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const results = document.getElementById('userResults');
+            const alertClass = type === 'error' ? 'alert-danger' : type === 'success' ? 'alert-success' : 'alert-info';
+            results.innerHTML = `
+                <div class="alert ${alertClass}">
+                    <strong>${new Date().toLocaleTimeString()}:</strong> ${message}
+                </div>
+            `;
+        }
+
+        async function loadAllUsers() {
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                if (data.users && data.users.length > 0) {
+                    const userTable = `
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>User Type</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.users.map(user => `
+                                    <tr class="${user.user_type === 'admin' ? 'table-warning' : ''}">
+                                        <td>${user.id}</td>
+                                        <td><strong>${user.username}</strong></td>
+                                        <td><span class="badge ${user.user_type === 'admin' ? 'bg-danger' : 'bg-primary'}">${user.user_type}</span></td>
+                                        <td>${new Date(user.created_at).toLocaleString()}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    showResult(`✅ Found ${data.users.length} users in database:<br>${userTable}`, 'success');
+                } else {
+                    showResult('❌ No users found in database', 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Error loading users: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadNonAdminUsers() {
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                if (data.users && data.users.length > 0) {
+                    const nonAdminUsers = data.users.filter(u => u.user_type !== 'admin');
+                    const userTable = `
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>User Type</th>
+                                    <th>Created At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${nonAdminUsers.map(user => `
+                                    <tr>
+                                        <td>${user.id}</td>
+                                        <td><strong>${user.username}</strong></td>
+                                        <td><span class="badge bg-primary">${user.user_type}</span></td>
+                                        <td>${new Date(user.created_at).toLocaleString()}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                    showResult(`✅ Found ${nonAdminUsers.length} non-admin users (what admin panel shows):<br>${userTable}`, 'success');
+                } else {
+                    showResult('❌ No users found in database', 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Error loading users: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-load on page load
+        window.onload = function() {
+            loadAllUsers();
+        };
+    </script>
+</body>
+</html>

@@ -5,7 +5,7 @@ class EratronicsApp {
         this.users = [];
         this.images = [];
         this.clicks = [];
-        this.apiBase = '/api/data';
+        this.apiBase = '/api';
         
         this.init();
     }
@@ -26,7 +26,7 @@ class EratronicsApp {
             }
 
             // Load all data from API
-            const response = await fetch(this.apiBase);
+            const response = await fetch(`${this.apiBase}/data`);
             if (response.ok) {
                 const data = await response.json();
                 this.users = data.users || [];
@@ -74,18 +74,20 @@ class EratronicsApp {
 
     async login(username, password) {
         try {
-            const response = await fetch(`${this.apiBase}/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ username, password })
-            });
-
+            // Load users data from the working API endpoint
+            const response = await fetch(`${this.apiBase}/data`);
             if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    this.currentUser = result.user;
+                const data = await response.json();
+                const users = data.users || [];
+                
+                // Find user by username
+                const user = users.find(u => u.username === username);
+                if (user && this.verifyPassword(password, user.password_hash)) {
+                    this.currentUser = {
+                        id: user.id,
+                        username: user.username,
+                        user_type: user.user_type
+                    };
                     await this.saveData();
                     return true;
                 }
@@ -502,10 +504,10 @@ class EratronicsApp {
                                 </span>
                             </div>
                             <div class="image-preview position-relative">
-                                <img src="static/thumbnails/${image.filename}" 
+                                <img src="${image.image_data || 'static/thumbnails/' + image.filename}" 
                                      alt="${image.name}" 
                                      class="clickable-image w-100"
-                                     data-full-image="static/uploads/${image.filename}"
+                                     data-full-image="${image.image_data || 'static/uploads/' + image.filename}"
                                      data-image-name="${image.name}"
                                      data-image-category="${image.category}"
                                      onclick="app.openImagePreview(this)"
@@ -618,8 +620,8 @@ class EratronicsApp {
         modal.show();
     }
 
-    openImagePreviewFromAdmin(filename, imageName, imageCategory) {
-        const fullImageSrc = `static/uploads/${filename}`;
+    openImagePreviewFromAdmin(filename, imageName, imageCategory, imageData) {
+        const fullImageSrc = imageData || `static/uploads/${filename}`;
         
         document.getElementById('previewImage').src = fullImageSrc;
         document.getElementById('previewImageName').textContent = imageName;
@@ -634,7 +636,12 @@ class EratronicsApp {
 
     // Admin Functions
     renderAdminUsers() {
-        const users = this.users.filter(u => u.user_type !== 'admin').sort((a, b) => a.username.localeCompare(b.username));
+        const users = this.users.sort((a, b) => {
+            // Sort admin users first, then by username
+            if (a.user_type === 'admin' && b.user_type !== 'admin') return -1;
+            if (a.user_type !== 'admin' && b.user_type === 'admin') return 1;
+            return a.username.localeCompare(b.username);
+        });
         
         return `
             <div class="card fade-in">
@@ -643,7 +650,7 @@ class EratronicsApp {
                         <div class="d-flex align-items-center">
                             <i class="bi bi-people text-primary me-2"></i>
                             <h5 class="mb-0">User Management</h5>
-                            <span class="badge bg-secondary ms-2">${users.length} users</span>
+                            <span class="badge bg-secondary ms-2">${users.length} users (${users.filter(u => u.user_type === 'admin').length} admin)</span>
                         </div>
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
@@ -676,18 +683,26 @@ class EratronicsApp {
                             </thead>
                             <tbody>
                                 ${users.map(user => `
-                                    <tr>
-                                        <td class="fw-semibold">${user.username}</td>
+                                    <tr class="${user.user_type === 'admin' ? 'table-warning' : ''}">
+                                        <td class="fw-semibold">
+                                            ${user.username}
+                                            ${user.user_type === 'admin' ? '<i class="bi bi-shield-fill text-danger ms-1" title="Admin User"></i>' : ''}
+                                        </td>
                                         <td>
-                                            <span class="badge ${this.getCategoryBadgeClass(user.user_type)} fs-6">
+                                            <span class="badge ${user.user_type === 'admin' ? 'bg-danger' : this.getCategoryBadgeClass(user.user_type)} fs-6">
                                                 ${user.user_type.toUpperCase()}
                                             </span>
                                         </td>
                                         <td class="text-muted">${new Date(user.created_at).toLocaleDateString()}</td>
                                         <td>
-                                            <button class="btn btn-outline-danger btn-sm" onclick="app.deleteUser(${user.id})">
-                                                <i class="bi bi-trash me-1"></i>Delete
-                                            </button>
+                                            ${user.user_type === 'admin' ? 
+                                                `<button class="btn btn-outline-danger btn-sm" onclick="app.deleteAdminUser(${user.id}, '${user.username}')">
+                                                    <i class="bi bi-trash me-1"></i>Delete Admin
+                                                </button>` :
+                                                `<button class="btn btn-outline-danger btn-sm" onclick="app.deleteUser(${user.id})">
+                                                    <i class="bi bi-trash me-1"></i>Delete
+                                                </button>`
+                                            }
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -752,7 +767,7 @@ class EratronicsApp {
                                         <td>
                                             <div class="d-flex gap-1">
                                                 <button class="btn btn-outline-primary btn-sm" 
-                                                        onclick="app.openImagePreviewFromAdmin('${image.filename}', '${image.name}', '${image.category}')">
+                                                        onclick="app.openImagePreviewFromAdmin('${image.filename}', '${image.name}', '${image.category}', '${image.image_data || ''}')">
                                                     <i class="bi bi-eye me-1"></i>Preview
                                                 </button>
                                                 <button class="btn btn-outline-danger btn-sm" onclick="app.deleteImage(${image.id})">
@@ -946,6 +961,68 @@ class EratronicsApp {
         }
     }
 
+    async deleteAdminUser(userId, username) {
+        // Prevent self-deletion
+        if (userId === this.currentUser.id) {
+            this.showAlert('You cannot delete your own account.', 'danger');
+            return;
+        }
+
+        // Check if this is the last admin user
+        const adminUsers = this.users.filter(u => u.user_type === 'admin');
+        if (adminUsers.length <= 1) {
+            this.showAlert('Cannot delete the last admin user. At least one admin must remain.', 'danger');
+            return;
+        }
+
+        // Enhanced confirmation for admin deletion
+        const confirmMessage = `⚠️ WARNING: You are about to delete an ADMIN user!\n\n` +
+                              `Admin: ${username}\n` +
+                              `This action cannot be undone.\n\n` +
+                              `Are you absolutely sure you want to delete this admin user?`;
+        
+        if (confirm(confirmMessage)) {
+            // Double confirmation for admin deletion
+            const doubleConfirm = confirm(`FINAL CONFIRMATION:\n\nDelete admin user "${username}"?\n\nType "DELETE" in the next prompt to confirm.`);
+            
+            if (doubleConfirm) {
+                const finalConfirm = prompt(`Type "DELETE" to confirm deletion of admin user "${username}":`);
+                
+                if (finalConfirm === 'DELETE') {
+                    try {
+                        const response = await fetch(`${this.apiBase}/users/${userId}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.success) {
+                                this.users = this.users.filter(u => u.id !== userId);
+                                this.clicks = this.clicks.filter(c => c.user_id !== userId);
+                                this.showAlert(`Admin user "${username}" deleted successfully!`, 'success');
+                                this.showAdminSection('users');
+                            } else {
+                                this.showAlert(result.message || 'Failed to delete admin user', 'danger');
+                            }
+                        } else {
+                            const error = await response.json();
+                            this.showAlert(error.message || 'Failed to delete admin user', 'danger');
+                        }
+                    } catch (error) {
+                        console.error('Delete admin user error:', error);
+                        this.showAlert('Error deleting admin user. Please try again.', 'danger');
+                    }
+                } else {
+                    this.showAlert('Admin deletion cancelled. You must type "DELETE" to confirm.', 'info');
+                }
+            } else {
+                this.showAlert('Admin deletion cancelled.', 'info');
+            }
+        } else {
+            this.showAlert('Admin deletion cancelled.', 'info');
+        }
+    }
+
     async addImage() {
         const name = document.getElementById('imageName').value;
         const category = document.getElementById('imageCategory').value;
@@ -1113,6 +1190,7 @@ class EratronicsApp {
     }
 
     async uploadExcel() {
+        console.log('uploadExcel function called');
         const fileInput = document.getElementById('excelFile');
         const file = fileInput.files[0];
         
@@ -1121,14 +1199,19 @@ class EratronicsApp {
             return;
         }
 
+        console.log('File selected:', file.name, file.type, file.size);
+
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
+                console.log('File read successfully, processing...');
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                console.log('Excel data parsed:', jsonData.length, 'rows');
 
                 if (jsonData.length === 0) {
                     this.showAlert('No data found in Excel file', 'warning');
@@ -1170,6 +1253,8 @@ class EratronicsApp {
                     }
                 });
 
+                console.log('Processed users:', users.length, 'errors:', errors.length);
+
                 if (errors.length > 0) {
                     const errorMsg = errors.slice(0, 5).join('; ');
                     const moreErrors = errors.length > 5 ? ` ... and ${errors.length - 5} more errors` : '';
@@ -1178,6 +1263,7 @@ class EratronicsApp {
                 }
 
                 // Send to API
+                console.log('Sending to API:', `${this.apiBase}/users/bulk`);
                 const response = await fetch(`${this.apiBase}/users/bulk`, {
                     method: 'POST',
                     headers: {
@@ -1186,8 +1272,11 @@ class EratronicsApp {
                     body: JSON.stringify({ users })
                 });
 
+                console.log('API response status:', response.status);
+
                 if (response.ok) {
                     const result = await response.json();
+                    console.log('API response:', result);
                     if (result.success) {
                         // Reload data to get updated user list
                         await this.loadData();
@@ -1210,6 +1299,7 @@ class EratronicsApp {
                     }
                 } else {
                     const error = await response.json();
+                    console.error('API error:', error);
                     this.showAlert(error.message || 'Failed to upload Excel file', 'danger');
                 }
 

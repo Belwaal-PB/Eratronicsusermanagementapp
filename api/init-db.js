@@ -1,8 +1,8 @@
 // Database initialization script
 // This script should be run once to set up the database tables and initial data
-import { createClient } from '@vercel/postgres';
+const { createClient } = require('@vercel/postgres');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');

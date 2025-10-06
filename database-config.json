@@ -1,0 +1,20 @@
+{
+  "database": {
+    "host": "ep-green-cherry-adrgm3qy-pooler.c-2.us-east-1.aws.neon.tech",
+    "port": 5432,
+    "database": "neondb",
+    "username": "neondb_owner",
+    "password": "npg_WQs9mX5AMNhz",
+    "ssl": true,
+    "sslmode": "require"
+  },
+  "vercel": {
+    "postgres_url": "postgresql://neondb_owner:npg_WQs9mX5AMNhz@ep-green-cherry-adrgm3qy-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require",
+    "postgres_user": "neondb_owner",
+    "postgres_password": "npg_WQs9mX5AMNhz",
+    "postgres_database": "neondb",
+    "postgres_host": "ep-green-cherry-adrgm3qy-pooler.c-2.us-east-1.aws.neon.tech",
+    "database_url": "postgresql://neondb_owner:npg_WQs9mX5AMNhz@ep-green-cherry-adrgm3qy-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require",
+    "postgres_url_non_pooling": "postgresql://neondb_owner:npg_WQs9mX5AMNhz@ep-green-cherry-adrgm3qy.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+  }
+}

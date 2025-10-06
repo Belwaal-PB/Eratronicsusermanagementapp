@@ -5,7 +5,8 @@
   "main": "index.html",
   "scripts": {
     "dev": "vercel dev",
-    "start": "echo 'Static site - serve index.html'"
+    "start": "echo 'Static site - serve index.html'",
+    "build": "echo 'No build step required'"
   },
   "keywords": [
     "user-management",
@@ -18,13 +19,12 @@
   "license": "MIT",
   "dependencies": {
     "@vercel/node": "^3.0.0",
-    "@vercel/kv": "^1.0.0",
     "@vercel/postgres": "^0.8.0"
   },
   "devDependencies": {
     "vercel": "^32.0.0"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   }
 }
