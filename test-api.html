@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>API Test Page</h1>
+    <p>This page tests the API endpoints to diagnose dashboard issues.</p>
+    
+    <div class="test-section">
+        <h3>Test 1: Basic API Call</h3>
+        <button onclick="testBasicAPI()">Test /api/data</button>
+        <div id="basic-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Statistics API Call</h3>
+        <button onclick="testStatsAPI()">Test /api/stats</button>
+        <div id="stats-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Individual Endpoints</h3>
+        <button onclick="testIndividualEndpoints()">Test Individual Endpoints</button>
+        <div id="individual-result"></div>
+    </div>
+
+    <script>
+        async function testBasicAPI() {
+            const resultDiv = document.getElementById('basic-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                console.log('Testing /api/data...');
+                const response = await fetch('/api/data');
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Data received:', data);
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Success!</h4>
+                            <p>Status: ${response.status}</p>
+                            <p>Users: ${data.users ? data.users.length : 'undefined'}</p>
+                            <p>Images: ${data.images ? data.images.length : 'undefined'}</p>
+                            <p>Clicks: ${data.clicks ? data.clicks.length : 'undefined'}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Error!</h4>
+                            <p>Status: ${response.status}</p>
+                            <p>Error: ${errorText}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Exception!</h4>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testStatsAPI() {
+            const resultDiv = document.getElementById('stats-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                console.log('Testing /api/stats...');
+                const response = await fetch('/api/stats');
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Stats data received:', data);
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Success!</h4>
+                            <p>Status: ${response.status}</p>
+                            <p>Total Users: ${data.summary ? data.summary.total_users : 'undefined'}</p>
+                            <p>Total Clicks: ${data.summary ? data.summary.total_clicks : 'undefined'}</p>
+                            <p>Total Images: ${data.summary ? data.summary.total_images : 'undefined'}</p>
+                            <p>Stats Records: ${data.stats ? data.stats.length : 'undefined'}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Error!</h4>
+                            <p>Status: ${response.status}</p>
+                            <p>Error: ${errorText}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Exception!</h4>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testIndividualEndpoints() {
+            const resultDiv = document.getElementById('individual-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            const endpoints = ['/api/users', '/api/images', '/api/clicks'];
+            let results = [];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`Testing ${endpoint}...`);
+                    const response = await fetch(endpoint);
+                    const data = response.ok ? await response.json() : await response.text();
+                    results.push({
+                        endpoint,
+                        status: response.status,
+                        success: response.ok,
+                        data: response.ok ? data : data
+                    });
+                } catch (error) {
+                    results.push({
+                        endpoint,
+                        status: 'ERROR',
+                        success: false,
+                        data: error.message
+                    });
+                }
+            }
+            
+            let html = '<h4>Individual Endpoint Results:</h4>';
+            results.forEach(result => {
+                const className = result.success ? 'success' : 'error';
+                const icon = result.success ? '✅' : '❌';
+                html += `
+                    <div class="${className}" style="margin: 10px 0; padding: 10px;">
+                        <strong>${icon} ${result.endpoint}</strong><br>
+                        Status: ${result.status}<br>
+                        <pre>${JSON.stringify(result.data, null, 2)}</pre>
+                    </div>
+                `;
+            });
+            
+            resultDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

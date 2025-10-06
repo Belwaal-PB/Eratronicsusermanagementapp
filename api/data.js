@@ -1,5 +1,5 @@
 // Postgres-based API endpoint for data management
-const { createClient } = require('@vercel/postgres');
+const { Pool } = require('pg');
 
 // Hash password function
 function hashPassword(password) {
@@ -12,37 +12,40 @@ function hashPassword(password) {
   return hash.toString();
 }
 
+// Database connection
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
 // Database helper functions
 async function getUsers() {
-  const client = createClient();
+  const client = await pool.connect();
   try {
-    await client.connect();
     const result = await client.query('SELECT * FROM users ORDER BY created_at');
     return result.rows;
   } finally {
-    await client.end();
+    client.release();
   }
 }
 
 async function getImages() {
-  const client = createClient();
+  const client = await pool.connect();
   try {
-    await client.connect();
     const result = await client.query('SELECT * FROM images ORDER BY created_at');
     return result.rows;
   } finally {
-    await client.end();
+    client.release();
   }
 }
 
 async function getClicks() {
-  const client = createClient();
+  const client = await pool.connect();
   try {
-    await client.connect();
     const result = await client.query('SELECT * FROM clicks ORDER BY clicked_at');
     return result.rows;
   } finally {
-    await client.end();
+    client.release();
   }
 }
 
@@ -62,9 +65,8 @@ export default async function handler(req, res) {
   }
 
   async function getStatistics() {
-    const client = createClient();
+    const client = await pool.connect();
     try {
-      await client.connect();
       
       // Get non-admin users count
       const usersResult = await client.query(
@@ -121,7 +123,7 @@ export default async function handler(req, res) {
 
       return { stats, summary };
     } finally {
-      await client.end();
+      client.release();
     }
   }
 
@@ -163,10 +165,9 @@ export default async function handler(req, res) {
         
         if (path === '/login') {
           const { username, password } = body;
-          const client = createClient();
+          const client = await pool.connect();
           
           try {
-            await client.connect();
             const result = await client.query(
               'SELECT * FROM users WHERE username = $1',
               [username]
@@ -190,14 +191,13 @@ export default async function handler(req, res) {
               res.status(401).json({ success: false, message: 'Invalid credentials' });
             }
           } finally {
-            await client.end();
+            client.release();
           }
         } else if (path === '/users') {
           const { username, password, user_type } = body;
-          const client = createClient();
+          const client = await pool.connect();
           
           try {
-            await client.connect();
             
             // Check if username already exists
             const existingUser = await client.query(
@@ -218,14 +218,13 @@ export default async function handler(req, res) {
             const newUser = result.rows[0];
             res.status(201).json({ success: true, user: newUser });
           } finally {
-            await client.end();
+            client.release();
           }
         } else if (path === '/images') {
           const { name, category, filename, imageData } = body;
-          const client = createClient();
+          const client = await pool.connect();
           
           try {
-            await client.connect();
             const result = await client.query(
               'INSERT INTO images (name, filename, category, image_data) VALUES ($1, $2, $3, $4) RETURNING *',
               [name, filename, category, imageData]
@@ -234,14 +233,13 @@ export default async function handler(req, res) {
             const newImage = result.rows[0];
             res.status(201).json({ success: true, image: newImage });
           } finally {
-            await client.end();
+            client.release();
           }
         } else if (path === '/clicks') {
           const { user_id, image_id } = body;
-          const client = createClient();
+          const client = await pool.connect();
           
           try {
-            await client.connect();
             const result = await client.query(
               'INSERT INTO clicks (user_id, image_id) VALUES ($1, $2) RETURNING *',
               [user_id, image_id]
@@ -250,14 +248,13 @@ export default async function handler(req, res) {
             const newClick = result.rows[0];
             res.status(201).json({ success: true, click: newClick });
           } finally {
-            await client.end();
+            client.release();
           }
         } else if (path === '/users/bulk') {
           const { users } = body;
-          const client = createClient();
+          const client = await pool.connect();
           
           try {
-            await client.connect();
             let successCount = 0;
             const errors = [];
 
@@ -294,7 +291,7 @@ export default async function handler(req, res) {
               errors 
             });
           } finally {
-            await client.end();
+            client.release();
           }
         } else {
           res.status(404).json({ success: false, message: 'Endpoint not found' });
@@ -304,10 +301,9 @@ export default async function handler(req, res) {
       case 'DELETE':
         if (path.startsWith('/users/')) {
           const userId = parseInt(path.split('/')[2]);
-          const client = createClient();
+          const client = await pool.connect();
           
           try {
-            await client.connect();
             
             // Check if user exists
             const userResult = await client.query(
@@ -324,14 +320,13 @@ export default async function handler(req, res) {
             await client.query('DELETE FROM users WHERE id = $1', [userId]);
             res.status(200).json({ success: true });
           } finally {
-            await client.end();
+            client.release();
           }
         } else if (path.startsWith('/images/')) {
           const imageId = parseInt(path.split('/')[2]);
-          const client = createClient();
+          const client = await pool.connect();
           
           try {
-            await client.connect();
             
             // Check if image exists
             const imageResult = await client.query(
@@ -348,7 +343,7 @@ export default async function handler(req, res) {
             await client.query('DELETE FROM images WHERE id = $1', [imageId]);
             res.status(200).json({ success: true });
           } finally {
-            await client.end();
+            client.release();
           }
         } else {
           res.status(404).json({ success: false, message: 'Endpoint not found' });
