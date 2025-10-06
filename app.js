@@ -35,7 +35,7 @@ class EratronicsApp {
                 
                 // If user is logged in, refresh the dashboard to show updated data
                 if (this.currentUser) {
-                    this.showDashboard();
+                    await this.showDashboard();
                 }
             } else {
                 console.error('Failed to load data from API');
@@ -103,10 +103,10 @@ class EratronicsApp {
         this.showLogin();
     }
 
-    checkAuthentication() {
+    async checkAuthentication() {
         this.updateNavbar();
         if (this.currentUser) {
-            this.showDashboard();
+            await this.showDashboard();
         } else {
             this.showLogin();
         }
@@ -124,7 +124,7 @@ class EratronicsApp {
                 this.showAlert('Login successful!', 'success');
                 this.hideModal('loginModal');
                 this.updateNavbar();
-                this.showDashboard();
+                await this.showDashboard();
             } else {
                 this.showAlert('Login unsuccessful. Please check username and password.', 'danger');
             }
@@ -244,18 +244,18 @@ class EratronicsApp {
             if (await this.login(username, password)) {
                 this.showAlert('Login successful!', 'success');
                 this.updateNavbar();
-                this.showDashboard();
+                await this.showDashboard();
             } else {
                 this.showAlert('Login unsuccessful. Please check username and password.', 'danger');
             }
         });
     }
 
-    showDashboard() {
+    async showDashboard() {
         this.updateNavbar();
         
         if (this.currentUser.user_type === 'admin') {
-            this.showAdminDashboard();
+            await this.showAdminDashboard();
         } else {
             this.showUserDashboard();
         }
@@ -330,8 +330,8 @@ class EratronicsApp {
         `;
     }
 
-    showAdminDashboard() {
-        const stats = this.getStatistics();
+    async showAdminDashboard() {
+        const stats = await this.fetchStatistics();
         
         document.getElementById('mainContent').innerHTML = `
             <div class="row">
@@ -431,7 +431,7 @@ class EratronicsApp {
         if (adminContent) {
             adminContent.style.opacity = '0';
             
-            setTimeout(() => {
+            setTimeout(async () => {
                 switch(section) {
                     case 'users':
                         adminContent.innerHTML = this.renderAdminUsers();
@@ -440,7 +440,7 @@ class EratronicsApp {
                         adminContent.innerHTML = this.renderAdminImages();
                         break;
                     case 'statistics':
-                        adminContent.innerHTML = this.renderAdminStatistics();
+                        adminContent.innerHTML = await this.renderAdminStatistics();
                         break;
                 }
                 adminContent.style.opacity = '1';
@@ -770,8 +770,8 @@ class EratronicsApp {
         `;
     }
 
-    renderAdminStatistics() {
-        const stats = this.getStatistics();
+    async renderAdminStatistics() {
+        const stats = await this.fetchStatistics();
         
         return `
             <div class="row mb-4">
@@ -1047,6 +1047,21 @@ class EratronicsApp {
             }
         } catch (error) {
             console.error('Add click error:', error);
+        }
+    }
+
+    async fetchStatistics() {
+        try {
+            const response = await fetch(`${this.apiBase}/stats`);
+            if (response.ok) {
+                return await response.json();
+            } else {
+                console.error('Failed to fetch statistics from API');
+                return { stats: [], summary: { total_users: 0, total_clicks: 0, total_images: 0, avg_clicks_per_user: 0 } };
+            }
+        } catch (error) {
+            console.error('Error fetching statistics:', error);
+            return { stats: [], summary: { total_users: 0, total_clicks: 0, total_images: 0, avg_clicks_per_user: 0 } };
         }
     }
 
