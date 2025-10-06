@@ -26,14 +26,39 @@ class EratronicsApp {
             }
 
             console.log('Loading data from API:', `${this.apiBase}/data`);
-            // Load all data from API
-            const response = await fetch(`${this.apiBase}/data`);
-            console.log('API response status:', response.status);
-            console.log('API response headers:', response.headers);
             
-            if (response.ok) {
-                const data = await response.json();
-                console.log('API data received:', data);
+            // Try multiple API endpoints as fallback
+            const endpoints = [
+                `${this.apiBase}/data`,
+                `${this.apiBase}/api/data`,
+                `${this.apiBase}/api`
+            ];
+            
+            let data = null;
+            let lastError = null;
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log('Trying endpoint:', endpoint);
+                    const response = await fetch(endpoint);
+                    console.log('API response status:', response.status, 'for endpoint:', endpoint);
+                    
+                    if (response.ok) {
+                        data = await response.json();
+                        console.log('API data received from:', endpoint, data);
+                        break;
+                    } else {
+                        const errorText = await response.text();
+                        console.error('Error from endpoint:', endpoint, 'Status:', response.status, 'Error:', errorText);
+                        lastError = `Status: ${response.status}, Error: ${errorText}`;
+                    }
+                } catch (error) {
+                    console.error('Network error for endpoint:', endpoint, error);
+                    lastError = error.message;
+                }
+            }
+            
+            if (data) {
                 this.users = data.users || [];
                 this.images = data.images || [];
                 this.clicks = data.clicks || [];
@@ -45,14 +70,24 @@ class EratronicsApp {
                     await this.showDashboard();
                 }
             } else {
-                console.error('Failed to load data from API, status:', response.status);
-                const errorText = await response.text();
-                console.error('Error response:', errorText);
-                this.showAlert(`Failed to load data. Status: ${response.status}, Error: ${errorText}`, 'danger');
+                console.error('All API endpoints failed. Last error:', lastError);
+                this.showAlert(`Failed to load data from all endpoints. Last error: ${lastError}`, 'danger');
+                
+                // Show dashboard anyway with empty data for testing
+                if (this.currentUser) {
+                    console.log('Showing dashboard with empty data for testing');
+                    await this.showDashboard();
+                }
             }
         } catch (error) {
             console.error('Error loading data:', error);
             this.showAlert('Error loading data. Please check your connection.', 'danger');
+            
+            // Show dashboard anyway with empty data for testing
+            if (this.currentUser) {
+                console.log('Showing dashboard with empty data after error');
+                await this.showDashboard();
+            }
         }
     }
 
@@ -242,6 +277,10 @@ class EratronicsApp {
                                 <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">
                                     <i class="bi bi-box-arrow-in-right me-2"></i>
                                     Sign In
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm w-100" onclick="app.testAPI()">
+                                    <i class="bi bi-wrench me-1"></i>
+                                    Test API Connection
                                 </button>
                             </form>
                         </div>
@@ -1419,6 +1458,39 @@ class EratronicsApp {
             }
         };
         reader.readAsArrayBuffer(file);
+    }
+
+    async testAPI() {
+        console.log('Testing API connection...');
+        this.showAlert('Testing API connection...', 'info');
+        
+        const endpoints = [
+            `${this.apiBase}/data`,
+            `${this.apiBase}/api/data`,
+            `${this.apiBase}/api`,
+            `${this.apiBase}/test-neon`
+        ];
+        
+        for (const endpoint of endpoints) {
+            try {
+                console.log('Testing endpoint:', endpoint);
+                const response = await fetch(endpoint);
+                console.log('Response from', endpoint, ':', response.status, response.statusText);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Success! Data from', endpoint, ':', data);
+                    this.showAlert(`✅ API working! Endpoint: ${endpoint}`, 'success');
+                    return;
+                } else {
+                    console.log('Failed response from', endpoint, ':', response.status);
+                }
+            } catch (error) {
+                console.log('Error testing', endpoint, ':', error.message);
+            }
+        }
+        
+        this.showAlert('❌ All API endpoints failed. Check console for details.', 'danger');
     }
 
     updateNavbar() {
