@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Test - Eratronics Selectit</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="bi bi-gear me-2"></i>Feature Test Dashboard</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Database Status -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6><i class="bi bi-database me-2"></i>Database Status</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <button class="btn btn-primary btn-sm mb-2" onclick="testDatabase()">Test Connection</button>
+                                        <button class="btn btn-success btn-sm mb-2" onclick="initDatabase()">Initialize DB</button>
+                                        <button class="btn btn-info btn-sm mb-2" onclick="loadData()">Load Data</button>
+                                        <div id="dbStatus" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6><i class="bi bi-people me-2"></i>User Management</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <button class="btn btn-primary btn-sm mb-2" onclick="testLogin()">Test Login</button>
+                                        <button class="btn btn-warning btn-sm mb-2" onclick="addTestUser()">Add Test User</button>
+                                        <div id="userStatus" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Image Management -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6><i class="bi bi-image me-2"></i>Image Management</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <button class="btn btn-primary btn-sm mb-2" onclick="testImageUpload()">Test Upload</button>
+                                        <button class="btn btn-danger btn-sm mb-2" onclick="testImageDelete()">Test Delete</button>
+                                        <div id="imageStatus" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6><i class="bi bi-eye me-2"></i>Image Preview</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <button class="btn btn-info btn-sm mb-2" onclick="testImagePreview()">Test Preview</button>
+                                        <div id="previewStatus" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Display -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6><i class="bi bi-table me-2"></i>Current Data</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="dataDisplay" class="mt-2"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const alertClass = type === 'error' ? 'alert-danger' : type === 'success' ? 'alert-success' : 'alert-info';
+            element.innerHTML = `
+                <div class="alert ${alertClass} alert-sm">
+                    <strong>${new Date().toLocaleTimeString()}:</strong> ${message}
+                </div>
+            `;
+        }
+
+        async function testDatabase() {
+            showResult('dbStatus', 'Testing database connection...', 'info');
+            try {
+                const response = await fetch('/api/test-neon');
+                const data = await response.json();
+                if (data.success) {
+                    showResult('dbStatus', `✅ Database connected!<br>PostgreSQL: ${data.data.postgresVersion}`, 'success');
+                } else {
+                    showResult('dbStatus', `❌ Database error: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('dbStatus', `❌ Connection failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function initDatabase() {
+            showResult('dbStatus', 'Initializing database...', 'info');
+            try {
+                const response = await fetch('/api/init-db', { method: 'POST' });
+                const data = await response.json();
+                if (data.success) {
+                    showResult('dbStatus', `✅ Database initialized!<br>${data.message}`, 'success');
+                } else {
+                    showResult('dbStatus', `❌ Init failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('dbStatus', `❌ Init error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadData() {
+            showResult('dbStatus', 'Loading data...', 'info');
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                currentData = data;
+                showResult('dbStatus', `✅ Data loaded!<br>Users: ${data.users.length}, Images: ${data.images.length}, Clicks: ${data.clicks.length}`, 'success');
+                displayData();
+            } catch (error) {
+                showResult('dbStatus', `❌ Load error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayData() {
+            if (!currentData) return;
+            
+            const html = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Users (${currentData.users.length})</h6>
+                        <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                            ${currentData.users.map(user => `
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>${user.username}</span>
+                                    <span class="badge bg-primary">${user.user_type}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Images (${currentData.images.length})</h6>
+                        <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                            ${currentData.images.map(image => `
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>${image.name}</span>
+                                    <span class="badge bg-secondary">${image.category}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Clicks (${currentData.clicks.length})</h6>
+                        <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                            ${currentData.clicks.map(click => `
+                                <div class="list-group-item">
+                                    <small>User: ${click.user_id}, Image: ${click.image_id}</small>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('dataDisplay').innerHTML = html;
+        }
+
+        async function testLogin() {
+            showResult('userStatus', 'Testing login...', 'info');
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                const users = data.users || [];
+                const adminUser = users.find(u => u.username === 'admin');
+                
+                if (adminUser) {
+                    // Simple password verification (same as in app.js)
+                    const password = 'admin123';
+                    let hash = 0;
+                    for (let i = 0; i < password.length; i++) {
+                        const char = password.charCodeAt(i);
+                        hash = ((hash << 5) - hash) + char;
+                        hash = hash & hash;
+                    }
+                    const passwordHash = hash.toString();
+                    
+                    if (passwordHash === adminUser.password_hash) {
+                        showResult('userStatus', `✅ Login test passed!<br>Admin user found and password verified`, 'success');
+                    } else {
+                        showResult('userStatus', `❌ Login test failed!<br>Password hash mismatch`, 'error');
+                    }
+                } else {
+                    showResult('userStatus', `❌ Login test failed!<br>Admin user not found`, 'error');
+                }
+            } catch (error) {
+                showResult('userStatus', `❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function addTestUser() {
+            showResult('userStatus', 'Adding test user...', 'info');
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'testuser_' + Date.now(),
+                        password: 'testpass123',
+                        user_type: 'a'
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    showResult('userStatus', `❌ HTTP ${response.status}: ${errorText}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    showResult('userStatus', `✅ Test user added!<br>Username: ${data.user.username}`, 'success');
+                    loadData(); // Refresh data
+                } else {
+                    showResult('userStatus', `❌ Add user failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('userStatus', `❌ Add user error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testImageUpload() {
+            showResult('imageStatus', 'Testing image upload...', 'info');
+            try {
+                // Create a simple test image data
+                const testImageData = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A';
+                
+                const response = await fetch('/api/images', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Test Image ' + Date.now(),
+                        category: 'basic',
+                        filename: 'test_' + Date.now() + '.jpg',
+                        imageData: testImageData
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    showResult('imageStatus', `❌ HTTP ${response.status}: ${errorText}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    showResult('imageStatus', `✅ Image upload test passed!<br>Image ID: ${data.image.id}`, 'success');
+                    loadData(); // Refresh data
+                } else {
+                    showResult('imageStatus', `❌ Upload failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('imageStatus', `❌ Upload error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testImageDelete() {
+            showResult('imageStatus', 'Testing image delete...', 'info');
+            if (!currentData || currentData.images.length === 0) {
+                showResult('imageStatus', `❌ No images to delete`, 'error');
+                return;
+            }
+            
+            try {
+                const firstImage = currentData.images[0];
+                const response = await fetch(`/api/images/${firstImage.id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    showResult('imageStatus', `❌ HTTP ${response.status}: ${errorText}`, 'error');
+                    return;
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    showResult('imageStatus', `✅ Image delete test passed!<br>Deleted image: ${firstImage.name}`, 'success');
+                    loadData(); // Refresh data
+                } else {
+                    showResult('imageStatus', `❌ Delete failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('imageStatus', `❌ Delete error: ${error.message}`, 'error');
+            }
+        }
+
+        function testImagePreview() {
+            showResult('previewStatus', 'Testing image preview...', 'info');
+            if (!currentData || currentData.images.length === 0) {
+                showResult('previewStatus', `❌ No images to preview`, 'error');
+                return;
+            }
+            
+            const firstImage = currentData.images[0];
+            const imageUrl = firstImage.image_data || `static/thumbnails/${firstImage.filename}`;
+            
+            // Test if image exists
+            const img = new Image();
+            img.onload = function() {
+                showResult('previewStatus', `✅ Image preview test passed!<br>Image: ${firstImage.name}<br>Source: ${firstImage.image_data ? 'Database (base64)' : 'Static file'}`, 'success');
+            };
+            img.onerror = function() {
+                showResult('previewStatus', `❌ Preview failed!<br>Image not found: ${imageUrl}`, 'error');
+            };
+            img.src = imageUrl;
+        }
+
+        // Auto-load data on page load
+        window.onload = function() {
+            loadData();
+        };
+    </script>
+</body>
+</html>
