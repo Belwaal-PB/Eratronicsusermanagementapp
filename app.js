@@ -25,20 +25,28 @@ class EratronicsApp {
                 this.currentUser = JSON.parse(savedUser);
             }
 
+            console.log('Loading data from API:', `${this.apiBase}/data`);
             // Load all data from API
             const response = await fetch(`${this.apiBase}/data`);
+            console.log('API response status:', response.status);
+            
             if (response.ok) {
                 const data = await response.json();
+                console.log('API data received:', data);
                 this.users = data.users || [];
                 this.images = data.images || [];
                 this.clicks = data.clicks || [];
+                
+                console.log('Data loaded - Users:', this.users.length, 'Images:', this.images.length, 'Clicks:', this.clicks.length);
                 
                 // If user is logged in, refresh the dashboard to show updated data
                 if (this.currentUser) {
                     await this.showDashboard();
                 }
             } else {
-                console.error('Failed to load data from API');
+                console.error('Failed to load data from API, status:', response.status);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
                 this.showAlert('Failed to load data. Please refresh the page.', 'danger');
             }
         } catch (error) {
@@ -1129,11 +1137,18 @@ class EratronicsApp {
 
     async fetchStatistics() {
         try {
+            console.log('Fetching statistics from API:', `${this.apiBase}/stats`);
             const response = await fetch(`${this.apiBase}/stats`);
+            console.log('Statistics API response status:', response.status);
+            
             if (response.ok) {
-                return await response.json();
+                const stats = await response.json();
+                console.log('Statistics data received:', stats);
+                return stats;
             } else {
-                console.error('Failed to fetch statistics from API');
+                console.error('Failed to fetch statistics from API, status:', response.status);
+                const errorText = await response.text();
+                console.error('Statistics error response:', errorText);
                 return { stats: [], summary: { total_users: 0, total_clicks: 0, total_images: 0, avg_clicks_per_user: 0 } };
             }
         } catch (error) {
