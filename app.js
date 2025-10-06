@@ -63,15 +63,21 @@ class EratronicsApp {
                 this.images = data.images || [];
                 this.clicks = data.clicks || [];
                 
-                console.log('Data loaded - Users:', this.users.length, 'Images:', this.images.length, 'Clicks:', this.clicks.length);
+                console.log('Data loaded successfully - Users:', this.users.length, 'Images:', this.images.length, 'Clicks:', this.clicks.length);
                 
                 // If user is logged in, refresh the dashboard to show updated data
                 if (this.currentUser) {
+                    console.log('Data loaded, showing dashboard for user:', this.currentUser.username);
                     await this.showDashboard();
                 }
             } else {
                 console.error('All API endpoints failed. Last error:', lastError);
                 this.showAlert(`Failed to load data from all endpoints. Last error: ${lastError}`, 'danger');
+                
+                // Initialize with empty arrays to prevent undefined errors
+                this.users = this.users || [];
+                this.images = this.images || [];
+                this.clicks = this.clicks || [];
                 
                 // Show dashboard anyway with empty data for testing
                 if (this.currentUser) {
@@ -413,8 +419,11 @@ class EratronicsApp {
                         <strong>Data Loading Issue</strong><br>
                         Unable to load application data. This might be due to API connectivity issues.
                         <br><br>
-                        <button class="btn btn-outline-primary me-2" onclick="app.loadData()">
+                        <button class="btn btn-outline-primary me-2" onclick="app.retryDataLoad()">
                             <i class="bi bi-arrow-clockwise me-1"></i>Retry Data Load
+                        </button>
+                        <button class="btn btn-outline-success me-2" onclick="app.forceLoadData()">
+                            <i class="bi bi-download me-1"></i>Force Load Data
                         </button>
                         <button class="btn btn-outline-info" onclick="app.testAPI()">
                             <i class="bi bi-wrench me-1"></i>Test API
@@ -475,10 +484,13 @@ class EratronicsApp {
         
         // Check if we have basic data, if not show a simplified admin dashboard
         if (!this.users || this.users.length === 0) {
-            console.log('No data loaded, showing simplified admin dashboard');
+            console.log('No users data loaded, showing simplified admin dashboard');
+            console.log('Users array:', this.users);
             this.showSimplifiedAdminDashboard();
             return;
         }
+        
+        console.log('Users data available, proceeding with full admin dashboard');
         
         document.getElementById('mainContent').innerHTML = `
             <div class="row">
@@ -1579,6 +1591,65 @@ class EratronicsApp {
             }
         };
         reader.readAsArrayBuffer(file);
+    }
+
+    async retryDataLoad() {
+        console.log('Retrying data load...');
+        this.showAlert('Retrying data load...', 'info');
+        
+        try {
+            // Clear existing data
+            this.users = [];
+            this.images = [];
+            this.clicks = [];
+            
+            // Try to load data again
+            await this.loadData();
+            
+            // If we get here and have a current user, show dashboard
+            if (this.currentUser) {
+                console.log('Data load retry successful, showing dashboard');
+                this.showAlert('Data loaded successfully!', 'success');
+                await this.showDashboard();
+            }
+        } catch (error) {
+            console.error('Error in retry data load:', error);
+            this.showAlert('Failed to load data on retry. Check console for details.', 'danger');
+        }
+    }
+
+    async forceLoadData() {
+        console.log('Force loading data...');
+        this.showAlert('Force loading data...', 'info');
+        
+        try {
+            // Try the most direct approach - just call the data endpoint
+            const response = await fetch(`${this.apiBase}/data`);
+            console.log('Force load response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Force load data received:', data);
+                
+                this.users = data.users || [];
+                this.images = data.images || [];
+                this.clicks = data.clicks || [];
+                
+                console.log('Force load successful - Users:', this.users.length, 'Images:', this.images.length, 'Clicks:', this.clicks.length);
+                
+                if (this.currentUser) {
+                    this.showAlert('Data force loaded successfully!', 'success');
+                    await this.showDashboard();
+                }
+            } else {
+                const errorText = await response.text();
+                console.error('Force load failed:', response.status, errorText);
+                this.showAlert(`Force load failed: ${response.status} - ${errorText}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error in force load:', error);
+            this.showAlert(`Force load error: ${error.message}`, 'danger');
+        }
     }
 
     async testAPI() {
