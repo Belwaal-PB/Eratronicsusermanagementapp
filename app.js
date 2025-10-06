@@ -82,20 +82,19 @@ class EratronicsApp {
 
     async login(username, password) {
         try {
-            // Load users data from the working API endpoint
-            const response = await fetch(`${this.apiBase}/data`);
+            // Use the dedicated login endpoint
+            const response = await fetch(`${this.apiBase}/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password })
+            });
+            
             if (response.ok) {
                 const data = await response.json();
-                const users = data.users || [];
-                
-                // Find user by username
-                const user = users.find(u => u.username === username);
-                if (user && this.verifyPassword(password, user.password_hash)) {
-                    this.currentUser = {
-                        id: user.id,
-                        username: user.username,
-                        user_type: user.user_type
-                    };
+                if (data.success) {
+                    this.currentUser = data.user;
                     await this.saveData();
                     return true;
                 }
@@ -273,6 +272,7 @@ class EratronicsApp {
 
     showUserDashboard() {
         const availableImages = this.getAvailableImages();
+        const hasUserSelected = this.hasUserAlreadySelected();
         
         document.getElementById('mainContent').innerHTML = `
             <div class="row">
@@ -294,40 +294,7 @@ class EratronicsApp {
                         </div>
                     </div>
 
-                    <!-- Action Bar -->
-                    <div class="row mb-4">
-                        <div class="col-md-8">
-                            <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-outline-primary" onclick="app.selectAllImages()">
-                                    <i class="bi bi-check-all me-1"></i>Select All
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" onclick="app.deselectAllImages()">
-                                    <i class="bi bi-x-square me-1"></i>Deselect All
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-4 text-md-end">
-                            <button type="button" class="btn btn-success btn-lg" id="confirmBtn" onclick="app.submitImageSelection()" disabled>
-                                <i class="bi bi-check-circle me-2"></i>Confirm Selection (0)
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Image Gallery -->
-                    <div class="card fade-in">
-                        <div class="card-header">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-images text-primary me-2"></i>
-                                    <h5 class="mb-0">Available Images</h5>
-                                    <span class="badge bg-secondary ms-2">${availableImages.length} images</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body p-4">
-                            ${this.renderImageGrid(availableImages)}
-                        </div>
-                    </div>
+                    ${hasUserSelected ? this.renderAlreadySelectedMessage() : this.renderSelectionInterface(availableImages)}
 
                     <!-- Footer -->
                     <div class="text-center mt-4">
@@ -480,6 +447,103 @@ class EratronicsApp {
         return categoryMapping[this.currentUser.user_type] || 'Available: All images';
     }
 
+    hasUserAlreadySelected() {
+        // Check if user has already made a selection
+        return this.clicks.some(click => click.user_id === this.currentUser.id);
+    }
+
+    getSelectedImage() {
+        // Get the image that the user has already selected
+        const userClick = this.clicks.find(click => click.user_id === this.currentUser.id);
+        if (userClick) {
+            return this.images.find(img => img.id === userClick.image_id);
+        }
+        return null;
+    }
+
+    renderAlreadySelectedMessage() {
+        const selectedImage = this.getSelectedImage();
+        return `
+            <div class="card fade-in">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <h5 class="mb-0">Selection Complete</h5>
+                    </div>
+                </div>
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h4 class="text-success mb-3">You have already made your selection!</h4>
+                    <p class="lead mb-4">You selected: <strong>${selectedImage ? selectedImage.name : 'Unknown Image'}</strong></p>
+                    ${selectedImage ? `
+                        <div class="row justify-content-center">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <img src="${selectedImage.image_data || 'static/thumbnails/' + selectedImage.filename}" 
+                                             alt="${selectedImage.name}" 
+                                             class="img-fluid rounded"
+                                             style="max-height: 200px; object-fit: contain;"
+                                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZTwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjY1JSIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vdCBGb3VuZDwvdGV4dD48L3N2Zz4='">
+                                        <h6 class="mt-3">${selectedImage.name}</h6>
+                                        <span class="badge ${this.getCategoryBadgeClass(selectedImage.category)} fs-6">
+                                            <i class="bi bi-tag me-1"></i>${selectedImage.category.charAt(0).toUpperCase() + selectedImage.category.slice(1)}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="mt-4">
+                        <p class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Each user can only make one selection. Your selection has been recorded.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderSelectionInterface(availableImages) {
+        return `
+            <!-- Action Bar -->
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <div class="alert alert-info d-flex align-items-center">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <div>
+                            <strong>Important:</strong> You can only select ONE image. Choose carefully!
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <button type="button" class="btn btn-success btn-lg" id="confirmBtn" onclick="app.submitImageSelection()" disabled>
+                        <i class="bi bi-check-circle me-2"></i>Confirm Selection (0)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Image Gallery -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-images text-primary me-2"></i>
+                            <h5 class="mb-0">Available Images</h5>
+                            <span class="badge bg-secondary ms-2">${availableImages.length} images</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    ${this.renderImageGrid(availableImages)}
+                </div>
+            </div>
+        `;
+    }
+
     renderImageGrid(images) {
         if (images.length === 0) {
             return `
@@ -497,8 +561,8 @@ class EratronicsApp {
                     <div class="image-item" data-image-id="${image.id}">
                         <div class="image-item-header">
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input image-checkbox" 
-                                       value="${image.id}" id="image-${image.id}" 
+                                <input type="radio" class="form-check-input image-radio" 
+                                       name="imageSelection" value="${image.id}" id="image-${image.id}" 
                                        onchange="app.toggleImageSelection(this)">
                                 <label class="form-check-label fw-semibold" for="image-${image.id}">
                                     ${image.name}
@@ -552,9 +616,21 @@ class EratronicsApp {
         return classes[category] || 'bg-secondary';
     }
 
-    toggleImageSelection(checkbox) {
-        const imageItem = checkbox.closest('.image-item');
-        if (checkbox.checked) {
+    toggleImageSelection(radio) {
+        // Check if user has already made a selection
+        if (this.hasUserAlreadySelected()) {
+            this.showAlert('You have already made your selection!', 'warning');
+            radio.checked = false;
+            return;
+        }
+
+        const imageItem = radio.closest('.image-item');
+        
+        if (radio.checked) {
+            // Remove selected class from all items
+            document.querySelectorAll('.image-item').forEach(item => {
+                item.classList.remove('selected');
+            });
             imageItem.classList.add('selected');
         } else {
             imageItem.classList.remove('selected');
@@ -563,7 +639,7 @@ class EratronicsApp {
     }
 
     updateSelectionCount() {
-        const selectedCount = document.querySelectorAll('.image-checkbox:checked').length;
+        const selectedCount = document.querySelectorAll('.image-radio:checked').length;
         const confirmBtn = document.getElementById('confirmBtn');
         if (confirmBtn) {
             confirmBtn.textContent = `Confirm Selection (${selectedCount})`;
@@ -572,39 +648,46 @@ class EratronicsApp {
     }
 
     selectAllImages() {
-        document.querySelectorAll('.image-checkbox').forEach(checkbox => {
-            checkbox.checked = true;
-            this.toggleImageSelection(checkbox);
-        });
+        // Not applicable for single selection - this method is kept for compatibility
+        this.showAlert('Please select only one image.', 'info');
     }
 
     deselectAllImages() {
-        document.querySelectorAll('.image-checkbox').forEach(checkbox => {
-            checkbox.checked = false;
-            this.toggleImageSelection(checkbox);
+        document.querySelectorAll('.image-radio').forEach(radio => {
+            radio.checked = false;
+            this.toggleImageSelection(radio);
         });
     }
 
     async submitImageSelection() {
-        const selectedImages = Array.from(document.querySelectorAll('.image-checkbox:checked'))
-                                   .map(cb => parseInt(cb.value));
-        
-        if (selectedImages.length === 0) {
-            this.showAlert('Please select at least one image.', 'warning');
+        // Check if user has already made a selection
+        if (this.hasUserAlreadySelected()) {
+            this.showAlert('You have already made your selection!', 'warning');
             return;
         }
 
-        if (confirm(`Are you sure you want to select ${selectedImages.length} image(s)?`)) {
+        const selectedImages = Array.from(document.querySelectorAll('.image-radio:checked'))
+                                   .map(radio => parseInt(radio.value));
+        
+        if (selectedImages.length === 0) {
+            this.showAlert('Please select one image.', 'warning');
+            return;
+        }
+
+        if (selectedImages.length > 1) {
+            this.showAlert('You can only select one image!', 'warning');
+            return;
+        }
+
+        if (confirm(`Are you sure you want to select this image? This is your only chance!`)) {
             try {
-                // Add all clicks in parallel
-                await Promise.all(selectedImages.map(imageId => 
-                    this.addClick(this.currentUser.id, imageId)
-                ));
-                this.showAlert(`Successfully selected ${selectedImages.length} image(s)!`, 'success');
-                this.deselectAllImages();
+                // Add the single click
+                await this.addClick(this.currentUser.id, selectedImages[0]);
+                this.showAlert(`Successfully selected your image!`, 'success');
                 
-                // Refresh data to get updated click counts
+                // Refresh data to get updated click counts and show the selection complete message
                 await this.loadData();
+                await this.showDashboard();
             } catch (error) {
                 console.error('Error submitting image selection:', error);
                 this.showAlert('Error submitting selection. Please try again.', 'danger');
