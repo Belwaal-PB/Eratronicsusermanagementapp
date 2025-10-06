@@ -1,8 +1,6 @@
 {
   "rewrites": [
     {
-<<<<<<< HEAD
-=======
       "source": "/api/login",
       "destination": "/api/index"
     },
@@ -43,7 +41,6 @@
       "destination": "/api/data"
     },
     {
->>>>>>> dfa0e5dfb2adff5d73bccdd336754b62b266ff7a
       "source": "/((?!api/|static/).*)",
       "destination": "/index.html"
     }

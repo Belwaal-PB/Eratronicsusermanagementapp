@@ -19,13 +19,9 @@
   "license": "MIT",
   "dependencies": {
     "@vercel/node": "^3.0.0",
-<<<<<<< HEAD
-    "@vercel/postgres": "^0.8.0"
-=======
     "@vercel/postgres": "^0.8.0",
     "pg": "^8.11.3",
     "bcryptjs": "^2.4.3"
->>>>>>> dfa0e5dfb2adff5d73bccdd336754b62b266ff7a
   },
   "devDependencies": {
     "vercel": "^32.0.0"
