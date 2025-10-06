@@ -29,6 +29,7 @@ class EratronicsApp {
             // Load all data from API
             const response = await fetch(`${this.apiBase}/data`);
             console.log('API response status:', response.status);
+            console.log('API response headers:', response.headers);
             
             if (response.ok) {
                 const data = await response.json();
@@ -47,7 +48,7 @@ class EratronicsApp {
                 console.error('Failed to load data from API, status:', response.status);
                 const errorText = await response.text();
                 console.error('Error response:', errorText);
-                this.showAlert('Failed to load data. Please refresh the page.', 'danger');
+                this.showAlert(`Failed to load data. Status: ${response.status}, Error: ${errorText}`, 'danger');
             }
         } catch (error) {
             console.error('Error loading data:', error);
