@@ -1,6 +1,49 @@
 {
   "rewrites": [
     {
+<<<<<<< HEAD
+=======
+      "source": "/api/login",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/init-db",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/test-neon",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/users",
+      "destination": "/api/users"
+    },
+    {
+      "source": "/api/users/(.*)",
+      "destination": "/api/users/[id]"
+    },
+    {
+      "source": "/api/images",
+      "destination": "/api/images"
+    },
+    {
+      "source": "/api/images/(.*)",
+      "destination": "/api/images/[id]"
+    },
+    {
+      "source": "/api/clicks",
+      "destination": "/api/index"
+    },
+    {
+      "source": "/api/stats",
+      "destination": "/api/data"
+    },
+    {
+      "source": "/api/data",
+      "destination": "/api/data"
+    },
+    {
+>>>>>>> dfa0e5dfb2adff5d73bccdd336754b62b266ff7a
       "source": "/((?!api/|static/).*)",
       "destination": "/index.html"
     }

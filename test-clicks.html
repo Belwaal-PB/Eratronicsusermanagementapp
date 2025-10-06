@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Clicks API - Eratronics Selectit</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Test Clicks API</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <button class="btn btn-primary" onclick="testDataEndpoint()">Test Data Endpoint</button>
+                        </div>
+                        <div class="mb-3">
+                            <button class="btn btn-success" onclick="testClicksEndpoint()">Test Clicks Endpoint</button>
+                        </div>
+                        <div class="mb-3">
+                            <button class="btn btn-info" onclick="addTestClick()">Add Test Click</button>
+                        </div>
+                        <div class="mb-3">
+                            <button class="btn btn-warning" onclick="testStatistics()">Test Statistics</button>
+                        </div>
+                        <div id="results" class="mt-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'alert alert-info';
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        function logError(message) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'alert alert-danger';
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+            console.error(message);
+        }
+
+        function logSuccess(message) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = 'alert alert-success';
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        async function testDataEndpoint() {
+            try {
+                log('Testing /api/data endpoint...');
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    logSuccess(`Data endpoint working! Found ${data.users?.length || 0} users, ${data.images?.length || 0} images, ${data.clicks?.length || 0} clicks`);
+                    console.log('Data:', data);
+                } else {
+                    logError(`Data endpoint failed: ${response.status} - ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                logError(`Data endpoint error: ${error.message}`);
+            }
+        }
+
+        async function testClicksEndpoint() {
+            try {
+                log('Testing /api/clicks endpoint...');
+                const response = await fetch('/api/clicks');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    logSuccess(`Clicks endpoint working! Found ${data.length || 0} clicks`);
+                    console.log('Clicks:', data);
+                } else {
+                    logError(`Clicks endpoint failed: ${response.status} - ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                logError(`Clicks endpoint error: ${error.message}`);
+            }
+        }
+
+        async function addTestClick() {
+            try {
+                log('Adding test click...');
+                const response = await fetch('/api/clicks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        user_id: 1, // Assuming user ID 1 exists
+                        image_id: 1  // Assuming image ID 1 exists
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    logSuccess(`Test click added successfully! Click ID: ${data.click?.id}`);
+                    console.log('Added click:', data.click);
+                } else {
+                    logError(`Failed to add test click: ${response.status} - ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                logError(`Add click error: ${error.message}`);
+            }
+        }
+
+        async function testStatistics() {
+            try {
+                log('Testing statistics...');
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const clicks = data.clicks || [];
+                    const users = data.users || [];
+                    const images = data.images || [];
+                    
+                    logSuccess(`Statistics: ${users.length} users, ${images.length} images, ${clicks.length} clicks`);
+                    
+                    // Show click details
+                    if (clicks.length > 0) {
+                        log(`Recent clicks:`);
+                        clicks.slice(-5).forEach(click => {
+                            const user = users.find(u => u.id === click.user_id);
+                            const image = images.find(i => i.id === click.image_id);
+                            log(`- User: ${user?.username || 'Unknown'} (ID: ${click.user_id}), Image: ${image?.name || 'Unknown'} (ID: ${click.image_id}), Time: ${new Date(click.clicked_at).toLocaleString()}`);
+                        });
+                    } else {
+                        log('No clicks found in database');
+                    }
+                } else {
+                    logError(`Statistics test failed: ${response.status}`);
+                }
+            } catch (error) {
+                logError(`Statistics test error: ${error.message}`);
+            }
+        }
+
+        // Auto-run data test on page load
+        window.onload = function() {
+            testDataEndpoint();
+        };
+    </script>
+</body>
+</html>
