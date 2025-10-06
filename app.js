@@ -170,11 +170,27 @@ class EratronicsApp {
             const password = document.getElementById('password').value;
             
             if (await this.login(username, password)) {
+                console.log('Modal login successful, currentUser:', this.currentUser);
                 this.showAlert('Login successful!', 'success');
                 this.hideModal('loginModal');
                 this.updateNavbar();
-                // Load data first, then show dashboard
-                await this.loadData();
+                
+                // Check if user is admin and handle differently
+                if (this.currentUser && this.currentUser.user_type === 'admin') {
+                    console.log('Admin user detected in modal, loading data with special handling...');
+                    try {
+                        await this.loadData();
+                        console.log('Data loaded for admin from modal, showing dashboard...');
+                        await this.showDashboard();
+                    } catch (error) {
+                        console.error('Error in admin data loading from modal:', error);
+                        this.showAlert('Error loading admin data, showing dashboard anyway...', 'warning');
+                        await this.showDashboard();
+                    }
+                } else {
+                    console.log('Regular user from modal, loading data normally...');
+                    await this.loadData();
+                }
             } else {
                 this.showAlert('Login unsuccessful. Please check username and password.', 'danger');
             }
@@ -296,11 +312,26 @@ class EratronicsApp {
             const password = document.getElementById('password').value;
             
             if (await this.login(username, password)) {
-                console.log('Login successful, loading data and showing dashboard...');
+                console.log('Login successful, currentUser:', this.currentUser);
                 this.showAlert('Login successful!', 'success');
                 this.updateNavbar();
-                // Load data first, then show dashboard
-                await this.loadData();
+                
+                // Check if user is admin and handle differently
+                if (this.currentUser && this.currentUser.user_type === 'admin') {
+                    console.log('Admin user detected, loading data with special handling...');
+                    try {
+                        await this.loadData();
+                        console.log('Data loaded for admin, showing dashboard...');
+                        await this.showDashboard();
+                    } catch (error) {
+                        console.error('Error in admin data loading:', error);
+                        this.showAlert('Error loading admin data, showing dashboard anyway...', 'warning');
+                        await this.showDashboard();
+                    }
+                } else {
+                    console.log('Regular user, loading data normally...');
+                    await this.loadData();
+                }
                 console.log('Dashboard should be shown now');
             } else {
                 this.showAlert('Login unsuccessful. Please check username and password.', 'danger');
@@ -358,6 +389,63 @@ class EratronicsApp {
         `;
     }
 
+    showSimplifiedAdminDashboard() {
+        console.log('Showing simplified admin dashboard');
+        document.getElementById('mainContent').innerHTML = `
+            <div class="row">
+                <div class="col-12">
+                    <!-- Admin Header -->
+                    <div class="dashboard-header fade-in">
+                        <div class="d-flex align-items-center justify-content-center mb-3">
+                            <div class="me-3">
+                                <img src="static/Eratronics Selectit logo.png" alt="Eratronics Selectit" style="height: 60px; width: auto;">
+                            </div>
+                            <div class="text-center">
+                                <h1 class="mb-1">Admin Dashboard</h1>
+                                <p class="lead mb-0">Welcome back, ${this.currentUser.username}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div class="alert alert-warning text-center">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Data Loading Issue</strong><br>
+                        Unable to load application data. This might be due to API connectivity issues.
+                        <br><br>
+                        <button class="btn btn-outline-primary me-2" onclick="app.loadData()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Retry Data Load
+                        </button>
+                        <button class="btn btn-outline-info" onclick="app.testAPI()">
+                            <i class="bi bi-wrench me-1"></i>Test API
+                        </button>
+                    </div>
+
+                    <!-- Basic Admin Info -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="bi bi-shield-check me-2"></i>Admin Status
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>Username:</strong> ${this.currentUser.username}</p>
+                            <p class="mb-2"><strong>User Type:</strong> ${this.currentUser.user_type}</p>
+                            <p class="mb-0"><strong>Status:</strong> <span class="badge bg-success">Logged In</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="text-center mt-4">
+                        <button class="btn btn-outline-secondary" onclick="app.logout()">
+                            <i class="bi bi-box-arrow-right me-1"></i>Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     async showAdminDashboard() {
         console.log('Loading admin dashboard...');
         let stats;
@@ -366,7 +454,30 @@ class EratronicsApp {
             console.log('Statistics loaded successfully:', stats);
         } catch (error) {
             console.error('Error loading statistics, using fallback:', error);
-            stats = { stats: [], summary: { total_users: 0, total_clicks: 0, total_images: 0, avg_clicks_per_user: 0 } };
+            // Use local data to calculate basic stats
+            const nonAdminUsers = this.users.filter(u => u.user_type !== 'admin');
+            const nonAdminClicks = this.clicks.filter(c => {
+                const user = this.users.find(u => u.id === c.user_id);
+                return user && user.user_type !== 'admin';
+            });
+            
+            stats = { 
+                stats: [], 
+                summary: { 
+                    total_users: nonAdminUsers.length, 
+                    total_clicks: nonAdminClicks.length, 
+                    total_images: this.images.length, 
+                    avg_clicks_per_user: nonAdminUsers.length > 0 ? nonAdminClicks.length / nonAdminUsers.length : 0 
+                } 
+            };
+            console.log('Using local statistics fallback:', stats);
+        }
+        
+        // Check if we have basic data, if not show a simplified admin dashboard
+        if (!this.users || this.users.length === 0) {
+            console.log('No data loaded, showing simplified admin dashboard');
+            this.showSimplifiedAdminDashboard();
+            return;
         }
         
         document.getElementById('mainContent').innerHTML = `
