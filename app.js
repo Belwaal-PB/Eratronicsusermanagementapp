@@ -137,7 +137,8 @@ class EratronicsApp {
                 this.showAlert('Login successful!', 'success');
                 this.hideModal('loginModal');
                 this.updateNavbar();
-                await this.showDashboard();
+                // Load data first, then show dashboard
+                await this.loadData();
             } else {
                 this.showAlert('Login unsuccessful. Please check username and password.', 'danger');
             }
@@ -255,9 +256,12 @@ class EratronicsApp {
             const password = document.getElementById('password').value;
             
             if (await this.login(username, password)) {
+                console.log('Login successful, loading data and showing dashboard...');
                 this.showAlert('Login successful!', 'success');
                 this.updateNavbar();
-                await this.showDashboard();
+                // Load data first, then show dashboard
+                await this.loadData();
+                console.log('Dashboard should be shown now');
             } else {
                 this.showAlert('Login unsuccessful. Please check username and password.', 'danger');
             }
@@ -265,11 +269,14 @@ class EratronicsApp {
     }
 
     async showDashboard() {
+        console.log('showDashboard called, currentUser:', this.currentUser);
         this.updateNavbar();
         
-        if (this.currentUser.user_type === 'admin') {
+        if (this.currentUser && this.currentUser.user_type === 'admin') {
+            console.log('Showing admin dashboard');
             await this.showAdminDashboard();
         } else {
+            console.log('Showing user dashboard');
             this.showUserDashboard();
         }
     }
