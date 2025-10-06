@@ -98,6 +98,10 @@ class EratronicsApp {
                     await this.saveData();
                     return true;
                 }
+            } else {
+                console.error('Login failed, status:', response.status);
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
             }
             return false;
         } catch (error) {
