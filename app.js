@@ -828,10 +828,22 @@ class EratronicsApp {
             
             <div class="card fade-in">
                 <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-bar-chart text-primary me-2"></i>
-                        <h5 class="mb-0">Detailed Click Statistics</h5>
-                        <span class="badge bg-secondary ms-2">${stats.stats.length} records</span>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-bar-chart text-primary me-2"></i>
+                            <h5 class="mb-0">Detailed Click Statistics</h5>
+                            <span class="badge bg-secondary ms-2">${stats.stats.length} records</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="statsPerPage" class="form-label mb-0 text-muted">Show:</label>
+                            <select id="statsPerPage" class="form-select form-select-sm" style="width: auto;" onchange="app.updateStatsPagination()">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="all">All</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body p-0">
@@ -848,55 +860,176 @@ class EratronicsApp {
                             </div>
                         </div>
                     ` : `
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="border-0">
-                                            <i class="bi bi-person me-1"></i>User
-                                        </th>
-                                        <th class="border-0">
-                                            <i class="bi bi-image me-1"></i>Image
-                                        </th>
-                                        <th class="border-0">
-                                            <i class="bi bi-collection me-1"></i>Category
-                                        </th>
-                                        <th class="border-0">
-                                            <i class="bi bi-mouse me-1"></i>Clicks
-                                        </th>
-                                        <th class="border-0">
-                                            <i class="bi bi-clock me-1"></i>Last Click
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${stats.stats.slice(0, 20).map(stat => `
+                        <div id="statsTableContainer">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
                                         <tr>
-                                            <td class="fw-semibold">${stat.username}</td>
-                                            <td>${stat.image_name}</td>
-                                            <td>
-                                                <span class="badge ${this.getCategoryBadgeClass(stat.category)} fs-6">
-                                                    <i class="bi bi-tag me-1"></i>${stat.category.charAt(0).toUpperCase() + stat.category.slice(1)}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-info fs-6">${stat.click_count}</span>
-                                            </td>
-                                            <td class="text-muted">${new Date(stat.last_clicked).toLocaleDateString()}</td>
+                                            <th class="border-0">
+                                                <i class="bi bi-person me-1"></i>User
+                                            </th>
+                                            <th class="border-0">
+                                                <i class="bi bi-image me-1"></i>Image
+                                            </th>
+                                            <th class="border-0">
+                                                <i class="bi bi-collection me-1"></i>Category
+                                            </th>
+                                            <th class="border-0">
+                                                <i class="bi bi-mouse me-1"></i>Clicks
+                                            </th>
+                                            <th class="border-0">
+                                                <i class="bi bi-clock me-1"></i>Last Click
+                                            </th>
                                         </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        ${stats.stats.length > 20 ? `
-                            <div class="card-footer text-center">
-                                <small class="text-muted">Showing first 20 records of ${stats.stats.length} total</small>
+                                    </thead>
+                                    <tbody id="statsTableBody">
+                                        ${this.renderStatsTableRows(stats.stats, 25)}
+                                    </tbody>
+                                </table>
                             </div>
-                        ` : ''}
+                            <div id="statsPagination" class="card-footer">
+                                ${this.renderStatsPagination(stats.stats.length, 25, 1)}
+                            </div>
+                        </div>
                     `}
                 </div>
             </div>
         `;
+    }
+
+    renderStatsTableRows(stats, perPage, currentPage = 1) {
+        const startIndex = (currentPage - 1) * perPage;
+        const endIndex = perPage === 'all' ? stats.length : startIndex + perPage;
+        const pageStats = perPage === 'all' ? stats : stats.slice(startIndex, endIndex);
+        
+        return pageStats.map(stat => `
+            <tr>
+                <td class="fw-semibold">${stat.username}</td>
+                <td>${stat.image_name}</td>
+                <td>
+                    <span class="badge ${this.getCategoryBadgeClass(stat.category)} fs-6">
+                        <i class="bi bi-tag me-1"></i>${stat.category.charAt(0).toUpperCase() + stat.category.slice(1)}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-info fs-6">${stat.click_count}</span>
+                </td>
+                <td class="text-muted">${new Date(stat.last_clicked).toLocaleDateString()}</td>
+            </tr>
+        `).join('');
+    }
+
+    renderStatsPagination(totalRecords, perPage, currentPage) {
+        if (perPage === 'all' || totalRecords <= perPage) {
+            return `<div class="text-center text-muted">Showing all ${totalRecords} records</div>`;
+        }
+
+        const totalPages = Math.ceil(totalRecords / perPage);
+        const startRecord = (currentPage - 1) * perPage + 1;
+        const endRecord = Math.min(currentPage * perPage, totalRecords);
+
+        let paginationHtml = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted">
+                    Showing ${startRecord}-${endRecord} of ${totalRecords} records
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+        `;
+
+        // Previous button
+        if (currentPage > 1) {
+            paginationHtml += `
+                <li class="page-item">
+                    <a class="page-link" href="#" onclick="app.goToStatsPage(${currentPage - 1})">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            `;
+        } else {
+            paginationHtml += `
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        <i class="bi bi-chevron-left"></i>
+                    </span>
+                </li>
+            `;
+        }
+
+        // Page numbers
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === currentPage) {
+                paginationHtml += `
+                    <li class="page-item active">
+                        <span class="page-link">${i}</span>
+                    </li>
+                `;
+            } else {
+                paginationHtml += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="app.goToStatsPage(${i})">${i}</a>
+                    </li>
+                `;
+            }
+        }
+
+        // Next button
+        if (currentPage < totalPages) {
+            paginationHtml += `
+                <li class="page-item">
+                    <a class="page-link" href="#" onclick="app.goToStatsPage(${currentPage + 1})">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            `;
+        } else {
+            paginationHtml += `
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        <i class="bi bi-chevron-right"></i>
+                    </span>
+                </li>
+            `;
+        }
+
+        paginationHtml += `
+                    </ul>
+                </nav>
+            </div>
+        `;
+
+        return paginationHtml;
+    }
+
+    updateStatsPagination() {
+        const perPageSelect = document.getElementById('statsPerPage');
+        const perPage = perPageSelect.value === 'all' ? 'all' : parseInt(perPageSelect.value);
+        
+        const stats = this.getStatistics();
+        const tableBody = document.getElementById('statsTableBody');
+        const pagination = document.getElementById('statsPagination');
+        
+        if (tableBody && pagination) {
+            tableBody.innerHTML = this.renderStatsTableRows(stats.stats, perPage, 1);
+            pagination.innerHTML = this.renderStatsPagination(stats.stats.length, perPage, 1);
+        }
+    }
+
+    goToStatsPage(page) {
+        const perPageSelect = document.getElementById('statsPerPage');
+        const perPage = perPageSelect.value === 'all' ? 'all' : parseInt(perPageSelect.value);
+        
+        const stats = this.getStatistics();
+        const tableBody = document.getElementById('statsTableBody');
+        const pagination = document.getElementById('statsPagination');
+        
+        if (tableBody && pagination) {
+            tableBody.innerHTML = this.renderStatsTableRows(stats.stats, perPage, page);
+            pagination.innerHTML = this.renderStatsPagination(stats.stats.length, perPage, page);
+        }
     }
 
     // Data Operations
